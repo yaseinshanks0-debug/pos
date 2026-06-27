@@ -1,0 +1,253 @@
+[2026-06-25T06:59:56.663Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:56.664Z] [32mINFO[0m: STAGE 5: ACCOUNTS PAYABLE, RECEIVABLE, PAYMENTS, & BANK RECON
+[2026-06-25T06:59:56.664Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:56.664Z] [32mINFO[0m: 
+--- STEP 1: CLEANING UP AND SEEDING BASE DATA ---
+[2026-06-25T06:59:56.715Z] [32mINFO[0m: Purging Stage 5 tables...
+[2026-06-25T06:59:56.850Z] [32mINFO[0m: Reset existing Customer ID: 1
+[2026-06-25T06:59:56.863Z] [32mINFO[0m: Reset existing Vendor ID: 1
+[2026-06-25T06:59:56.876Z] [32mINFO[0m: 
+--- STEP 2: CREATING FISCAL YEAR & BANK ACCOUNT ---
+[2026-06-25T06:59:56.994Z] [32mINFO[0m: Fiscal year 2026 initialized successfully with 12 monthly periods.
+[2026-06-25T06:59:57.001Z] [32mINFO[0m: Fiscal Year 2026 created. ID: 9
+[2026-06-25T06:59:57.001Z] [32mINFO[0m: Validating and creating bank account: SVB Corporate Operating Checking
+[2026-06-25T06:59:57.019Z] [32mINFO[0m: Successfully created bank account ID: 6
+[2026-06-25T06:59:57.025Z] [32mINFO[0m: Bank Account Created successfully: SVB Corporate Operating Checking | Initial balance: $0.00
+[2026-06-25T06:59:57.072Z] [32mINFO[0m: Funded bank account with $50,000.00 capital contribution. Current Balance: $50000.00
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  TRIAL BALANCE: BEFORE CORE STAGE 5 TRANSACTIONS
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  Code   | Account Name                        | Type        | Net Debit ($) | Net Credit ($)
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: -----------------------------------------------------------------------------------------------
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  1010   | Cash and Cash Equivalents           | assets      |      50000.00 |           0.00
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  3010   | Retained Earnings                   | equity      |          0.00 |       50000.00
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: -----------------------------------------------------------------------------------------------
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  TOTALS                                     |             |      50000.00 |       50000.00
+[2026-06-25T06:59:57.079Z] [32mINFO[0m:  Balanced: YES (DEBITS = CREDITS)
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: 
+--- STEP 3: ACCOUNTS PAYABLE WORKFLOWS ---
+[2026-06-25T06:59:57.079Z] [32mINFO[0m: Validating and creating vendor invoice: INV-2026-001
+[2026-06-25T06:59:57.119Z] [32mINFO[0m: Vendor Invoice 6 created as DRAFT.
+[2026-06-25T06:59:57.126Z] [32mINFO[0m: Created Draft Vendor Invoice. Number: INV-2026-001 | Total Amount: $1200.00 | Status: draft
+[2026-06-25T06:59:57.126Z] [32mINFO[0m: Posting vendor invoice ID: 6
+[2026-06-25T06:59:57.171Z] [32mINFO[0m: Vendor Invoice 6 successfully POSTED to GL.
+[2026-06-25T06:59:57.177Z] [32mINFO[0m: Posted Vendor Invoice. Status: posted | Total: $1200.00
+[2026-06-25T06:59:57.178Z] [32mINFO[0m: Applying vendor payment of $500 on invoice ID: 6
+[2026-06-25T06:59:57.240Z] [32mINFO[0m: Vendor payment applied successfully. Bank balance updated to: 49500.00
+[2026-06-25T06:59:57.248Z] [32mINFO[0m: Applied partial payment of $500.00.
+[2026-06-25T06:59:57.267Z] [32mINFO[0m: Invoice status: partially_paid | Total Paid: $500.00 | Bank Balance: $49500.00
+[2026-06-25T06:59:57.267Z] [32mINFO[0m: Applying vendor payment of $700 on invoice ID: 6
+[2026-06-25T06:59:57.333Z] [32mINFO[0m: Vendor payment applied successfully. Bank balance updated to: 48800.00
+[2026-06-25T06:59:57.340Z] [32mINFO[0m: Applied settlement payment of $700.00.
+[2026-06-25T06:59:57.356Z] [32mINFO[0m: Invoice status: paid | Total Paid: $1200.00 | Bank Balance: $48800.00
+[2026-06-25T06:59:57.357Z] [32mINFO[0m: Generating accounts payable vendor aging report for company: 1
+[2026-06-25T06:59:57.369Z] [32mINFO[0m: Vendor Aging Report generated: [
+  {
+    "vendorId": 1,
+    "vendorName": "Global Logistics Supplier Inc",
+    "current": 0,
+    "aging31To60": 0,
+    "aging61To90": 0,
+    "agingOver90": 0,
+    "totalOutstanding": 0
+  }
+]
+[2026-06-25T06:59:57.369Z] [32mINFO[0m: 
+--- STEP 4: ACCOUNTS RECEIVABLE & CREDIT CONTROL ---
+[2026-06-25T06:59:57.369Z] [32mINFO[0m: Validating and creating customer invoice: CUST-INV-001
+[2026-06-25T06:59:57.405Z] [32mINFO[0m: Customer Invoice 11 created as DRAFT.
+[2026-06-25T06:59:57.411Z] [32mINFO[0m: Created Customer Invoice Draft. Total Amount: $3500.00
+[2026-06-25T06:59:57.412Z] [32mINFO[0m: Posting customer invoice ID: 11
+[2026-06-25T06:59:57.466Z] [32mINFO[0m: Customer Invoice 11 successfully POSTED to GL. Customer balance updated to: $3500.00
+[2026-06-25T06:59:57.479Z] [32mINFO[0m: Posted Customer Invoice. Status: posted | Customer Outstanding Balance: $3500.00
+[2026-06-25T06:59:57.480Z] [32mINFO[0m: 
+Enforcing Credit Limit of $4,000.00 on Customer...
+[2026-06-25T06:59:57.488Z] [32mINFO[0m: Attempting to post another invoice of $1,000.00 (which exceeds credit limit of $4,000 since $3,500 is outstanding)...
+[2026-06-25T06:59:57.488Z] [32mINFO[0m: Validating and creating customer invoice: CUST-INV-OVERLIMIT
+[2026-06-25T06:59:57.516Z] [32mINFO[0m: Customer Invoice 12 created as DRAFT.
+[2026-06-25T06:59:57.524Z] [32mINFO[0m: Posting customer invoice ID: 12
+[2026-06-25T06:59:57.544Z] [32mINFO[0m: [SUCCESSFULLY BLOCKED] Expected Credit Limit Error Caught: Business Rule Violation [CreditLimitExceeded]: Posting of $1000.00 exceeds customer's credit limit of $4000.00 (Outstanding: $3500.00).
+[2026-06-25T06:59:57.544Z] [32mINFO[0m: 
+Setting Customer on STRICT CREDIT HOLD...
+[2026-06-25T06:59:57.552Z] [32mINFO[0m: Posting customer invoice ID: 12
+[2026-06-25T06:59:57.574Z] [32mINFO[0m: [SUCCESSFULLY BLOCKED] Expected Credit Hold Error Caught: Business Rule Violation [CreditHoldEnforced]: Cannot post invoice: Customer 'Mega Retail Distributor Ltd' is on strict CREDIT HOLD.
+[2026-06-25T06:59:57.581Z] [32mINFO[0m: Customer released from Credit Hold.
+[2026-06-25T06:59:57.581Z] [32mINFO[0m: Applying customer payment of $2000 from customer ID: 1
+[2026-06-25T06:59:57.652Z] [32mINFO[0m: Customer payment received and allocated. Customer outstanding balance: $1500.00. Bank balance: $50800.00
+[2026-06-25T06:59:57.668Z] [32mINFO[0m: Customer Receipt applied. Customer outstanding: $1500.00 | Bank Balance: $50800.00
+[2026-06-25T06:59:57.668Z] [32mINFO[0m: 
+--- STEP 5: CREDIT NOTE WORKFLOW ---
+[2026-06-25T06:59:57.668Z] [32mINFO[0m: Validating and creating credit note: CN-CUST-1002
+[2026-06-25T06:59:57.685Z] [32mINFO[0m: Successfully created credit note ID: 6
+[2026-06-25T06:59:57.690Z] [32mINFO[0m: Created Customer Credit Note. Number: CN-CUST-1002 | Amount: $500.00 | Status: draft
+[2026-06-25T06:59:57.691Z] [32mINFO[0m: Posting credit note ID: 6
+[2026-06-25T06:59:57.733Z] [32mINFO[0m: Credit note 6 posted successfully.
+[2026-06-25T06:59:57.745Z] [32mINFO[0m: Posted Credit Note. Status: posted | Customer Outstanding: $1000.00
+[2026-06-25T06:59:57.745Z] [32mINFO[0m: Applying credit note ID: 6 to invoice ID: 11
+[2026-06-25T06:59:57.776Z] [32mINFO[0m: Applied $500.00 from Credit Note to Customer Invoice 11
+[2026-06-25T06:59:57.829Z] [32mINFO[0m: Credit note applied. Credit Note status: applied | Invoice Paid Amount: $2500.00 | Invoice Status: partially_paid
+[2026-06-25T06:59:57.829Z] [32mINFO[0m: 
+--- STEP 6: REVERSALS ---
+[2026-06-25T06:59:57.829Z] [32mINFO[0m: Reversing partial customer receipt of $2,000.00 (Receipt ID: 6)...
+[2026-06-25T06:59:57.829Z] [32mINFO[0m: Reversing customer receipt ID: 6. Reason: Bounced customer check / NSFs
+[2026-06-25T06:59:57.904Z] [32mINFO[0m: Customer receipt 6 successfully reversed.
+[2026-06-25T06:59:57.920Z] [32mINFO[0m: Reversal applied. Receipt reversal date: 2026-06-25T06:59:57.872Z | Customer Outstanding restored to: $3000.00 | Bank Balance: $48800.00
+[2026-06-25T06:59:57.921Z] [32mINFO[0m: 
+--- STEP 7: BANK STATEMENT MATCHING ENGINE & RECONCILIATION ---
+[2026-06-25T06:59:57.921Z] [32mINFO[0m: Importing external bank statement transactions...
+[2026-06-25T06:59:57.926Z] [32mINFO[0m: Importing 6 bank transactions for account ID: 6
+[2026-06-25T06:59:57.976Z] [32mINFO[0m: Successfully imported 6 bank transactions.
+[2026-06-25T06:59:57.981Z] [32mINFO[0m: Successfully imported 6 statement transactions.
+[2026-06-25T06:59:57.981Z] [32mINFO[0m: 
+Matching transactions with ledger records...
+[2026-06-25T06:59:57.988Z] [32mINFO[0m: Matching bank transaction ID: 55 to type: interest ID: 55
+[2026-06-25T06:59:58.002Z] [32mINFO[0m: Bank transaction 55 matched successfully.
+[2026-06-25T06:59:58.009Z] [32mINFO[0m: Matching bank transaction ID: 56 to type: payment ID: 11
+[2026-06-25T06:59:58.031Z] [32mINFO[0m: Bank transaction 56 matched successfully.
+[2026-06-25T06:59:58.039Z] [32mINFO[0m: Matching bank transaction ID: 57 to type: payment ID: 12
+[2026-06-25T06:59:58.059Z] [32mINFO[0m: Bank transaction 57 matched successfully.
+[2026-06-25T06:59:58.064Z] [32mINFO[0m: Matching bank transaction ID: 58 to type: receipt ID: 6
+[2026-06-25T06:59:58.087Z] [32mINFO[0m: Bank transaction 58 matched successfully.
+[2026-06-25T06:59:58.099Z] [32mINFO[0m: Matching bank transaction ID: 59 to type: receipt ID: 6
+[2026-06-25T06:59:58.127Z] [32mINFO[0m: Bank transaction 59 matched successfully.
+[2026-06-25T06:59:58.135Z] [32mINFO[0m: 
+Found unmatched bank fee transaction ID: 60 ($-35.00). Posting direct reconciliation adjustment to GL...
+[2026-06-25T06:59:58.135Z] [32mINFO[0m: Posting reconciliation adjustment for bank transaction ID: 60
+[2026-06-25T06:59:58.190Z] [32mINFO[0m: Reconciliation adjustment posted. Bank balance adjusted to: $48765.00
+[2026-06-25T06:59:58.198Z] [32mINFO[0m: Adjustment posted. Transaction status: adjustments_posted
+[2026-06-25T06:59:58.198Z] [32mINFO[0m: 
+Reconciling and closing Bank Statement for January 2026...
+[2026-06-25T06:59:58.198Z] [32mINFO[0m: Reconciling bank account ID: 6 up to date: Sat Jan 31 2026 00:00:00 GMT+0000 (Coordinated Universal Time)
+[2026-06-25T06:59:58.259Z] [32mINFO[0m: Reconciliation successfully completed and APPROVED for Bank Account ID 6
+[2026-06-25T06:59:58.265Z] [32mINFO[0m: 
+Reconciliation COMPLETE!
+[2026-06-25T06:59:58.265Z] [32mINFO[0m: Reconciliation ID: 4
+[2026-06-25T06:59:58.265Z] [32mINFO[0m: Statement Ending Balance: $48765.00
+[2026-06-25T06:59:58.265Z] [32mINFO[0m: Ledger Ending Balance: $48765.00
+[2026-06-25T06:59:58.265Z] [32mINFO[0m: Status: approved
+[2026-06-25T06:59:58.271Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  TRIAL BALANCE: AFTER CORE STAGE 5 TRANSACTIONS
+[2026-06-25T06:59:58.271Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  Code   | Account Name                        | Type        | Net Debit ($) | Net Credit ($)
+[2026-06-25T06:59:58.271Z] [32mINFO[0m: -----------------------------------------------------------------------------------------------
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  1010   | Cash and Cash Equivalents           | assets      |      48765.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  1200   | Accounts Receivable                 | assets      |       3000.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  2010   | Accounts Payable                    | liabilities |          0.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  3010   | Retained Earnings                   | equity      |          0.00 |       50000.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  4010   | Sales Revenue                       | revenue     |          0.00 |        3500.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  4020   | Sales Returns & Refunds             | revenue     |        500.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  5010   | Cost of Goods Sold (COGS)           | expenses    |       1035.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  5020   | Inventory Shrinkage Expense         | expenses    |        200.00 |           0.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m: -----------------------------------------------------------------------------------------------
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  TOTALS                                     |             |      53500.00 |       53500.00
+[2026-06-25T06:59:58.271Z] [32mINFO[0m:  Balanced: YES (DEBITS = CREDITS)
+[2026-06-25T06:59:58.271Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:58.272Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.272Z] [32mINFO[0m:  GENERAL LEDGER JOURNAL ENTRIES
+[2026-06-25T06:59:58.272Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:58.277Z] [32mINFO[0m: 
+Date: 2026-01-02 | Description: Owner capital contribution to fund bank account
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |     50000.00 |             
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   3010         | Retained Earnings                   |              |     50000.00
+[2026-06-25T06:59:58.277Z] [32mINFO[0m: 
+Date: 2026-01-10 | Description: Vendor Invoice Posting: INV-2026-001
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   5010         | Cost of Goods Sold (COGS)           |      1000.00 |             
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   5020         | Inventory Shrinkage Expense         |       200.00 |             
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   2010         | Accounts Payable                    |              |      1200.00
+[2026-06-25T06:59:58.277Z] [32mINFO[0m: 
+Date: 2026-01-15 | Description: Partial payment for store supplies
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   2010         | Accounts Payable                    |       500.00 |             
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |              |       500.00
+[2026-06-25T06:59:58.277Z] [32mINFO[0m: 
+Date: 2026-01-28 | Description: Final invoice settlement payment
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   2010         | Accounts Payable                    |       700.00 |             
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |              |       700.00
+[2026-06-25T06:59:58.277Z] [32mINFO[0m: 
+Date: 2026-01-12 | Description: Customer Invoice Posting: CUST-INV-001
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.277Z] [32mINFO[0m:   1200         | Accounts Receivable                 |      3500.00 |             
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   4010         | Sales Revenue                       |              |      3500.00
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: 
+Date: 2026-01-18 | Description: Deposit payment for wholesale bulk order
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |      2000.00 |             
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1200         | Accounts Receivable                 |              |      2000.00
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: 
+Date: 2026-01-20 | Description: Customer Credit Note: CN-CUST-1002
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   4020         | Sales Returns & Refunds             |       500.00 |             
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1200         | Accounts Receivable                 |              |       500.00
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: 
+Date: 2026-06-25 | Description: REVERSAL of Customer Receipt 6. Reason: Bounced customer check / NSFs
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1200         | Accounts Receivable                 |      2000.00 |             
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |              |      2000.00
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: 
+Date: 2026-01-31 | Description: Bank Reconciliation Adjustment: Monthly Bank Account Maintenance Account Charges
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   Account Code | Account Name                        |    Debit ($) |   Credit ($)
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   -------------------------------------------------------------------------------
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   5010         | Cost of Goods Sold (COGS)           |        35.00 |             
+[2026-06-25T06:59:58.278Z] [32mINFO[0m:   1010         | Cash and Cash Equivalents           |              |        35.00
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:58.278Z] [32mINFO[0m: Generating accounts payable vendor aging report for company: 1
+[2026-06-25T06:59:58.287Z] [32mINFO[0m: Generating accounts receivable customer aging report for company: 1
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  ACCOUNTS PAYABLE (AP) VENDOR AGING REPORT
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Vendor ID  | Vendor Name                    |  Current ($) |  31-60 ($) |  61-90 ($) |    >90 ($) |    Total ($)
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: --------------------------------------------------------------------------------------------------------------
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  1          | Global Logistics Supplier Inc  |         0.00 |       0.00 |       0.00 |       0.00 |         0.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  ACCOUNTS RECEIVABLE (AR) CUSTOMER AGING REPORT
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Cust ID    | Customer Name                  |  Current ($) |  31-60 ($) |  61-90 ($) |    >90 ($) |    Total ($)
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: --------------------------------------------------------------------------------------------------------------
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  13         | Jane Doe Offline               |         0.00 |       0.00 |       0.00 |       0.00 |         0.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  14         | Crash test Customer            |         0.00 |       0.00 |       0.00 |       0.00 |         0.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  15         | Jane Wins Client Strategy override |         0.00 |       0.00 |       0.00 |       0.00 |         0.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  1          | Mega Retail Distributor Ltd    |         0.00 |       0.00 |       0.00 |    3000.00 |      3000.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  FINAL BANK RECONCILIATION SUMMARY (JANUARY 2026)
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Bank Account:        SVB Corporate Operating Checking
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Account Number:      9876543210
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Routing Number:      021000021
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Reconciliation ID:   4
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Status:              APPROVED
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Reconciled At:       2026-06-25T06:59:58.220Z
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Statement End Date:  2026-01-31
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Statement Ending:    $48765.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Ledger Ending:       $48765.00
+[2026-06-25T06:59:58.298Z] [32mINFO[0m:  Discrepancy:         $0.00 (Perfect Match)
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================
+
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: 
+==================================================================
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: STAGE 5 VALIDATION SIMULATION COMPLETED SUCCESSFULLY!
+[2026-06-25T06:59:58.298Z] [32mINFO[0m: ==================================================================

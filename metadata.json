@@ -1,0 +1,6 @@
+{
+  "name": "Cloud MultiStore POS Platform",
+  "description": "A production-grade cloud-native multi-store retail management platform with headquarters control, inventory operations, offline-first sync operations, and dual role-based access management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
