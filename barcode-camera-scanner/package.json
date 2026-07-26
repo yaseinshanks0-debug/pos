@@ -5,10 +5,16 @@
   "main": "src/main/electron.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron ."
+    "dev": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "devDependencies": {
     "electron": "^34.1.1",
+    "electron-builder": "^26.15.3",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "jsdom": "^29.1.1"
@@ -16,6 +22,52 @@
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
     "@zxing/browser": "^0.1.5",
-    "@zxing/library": "^0.21.3"
+    "@zxing/library": "^0.21.3",
+    "electron-updater": "^6.8.9",
+    "png-to-ico": "^3.0.2"
+  },
+  "author": "Software Engineer",
+  "build": {
+    "appId": "com.pos.barcodecamerascanner",
+    "productName": "POS Barcode Scanner",
+    "copyright": "Copyright © 2024",
+    "directories": {
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Barcode Scanner"
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "username",
+        "repo": "barcode-camera-scanner"
+      }
+    ]
   }
 }

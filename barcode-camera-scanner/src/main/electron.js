@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 
@@ -23,7 +24,14 @@ function createWindow() {
     });
 }
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+    createWindow();
+
+    // Check for updates in production
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -38,7 +46,7 @@ app.on('activate', () => {
 });
 
 // IPC handler for keyboard wedge simulation
-ipcMain.on('wedge-barcode', async (event, { barcode, delayBeforeType, delayBeforeEnter }) => {
+ipcMain.handle('wedge-barcode', async (event, { barcode, delayBeforeType, delayBeforeEnter }) => {
     try {
         // We delay typing if configured
         if (delayBeforeType > 0) {
@@ -58,7 +66,7 @@ ipcMain.on('wedge-barcode', async (event, { barcode, delayBeforeType, delayBefor
 
         // Press Enter
         await keyboard.type(Key.Enter);
-
+        return true;
     } catch (err) {
         console.error("Failed to type barcode via wedge:", err);
     }

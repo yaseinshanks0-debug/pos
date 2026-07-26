@@ -114,7 +114,7 @@ function stopScanner() {
     }
 }
 
-function handleScanResult(barcode) {
+async function handleScanResult(barcode) {
     const now = Date.now();
 
     if (barcode === lastScannedCode && (now - lastScanTime) < DEBOUNCE_TIME) {
@@ -127,7 +127,7 @@ function handleScanResult(barcode) {
     // Perform Keyboard Wedge Simulation if enabled
     if (wedgeModeCheckbox && wedgeModeCheckbox.checked) {
         if (window.electronAPI && window.electronAPI.sendBarcodeWedge) {
-            window.electronAPI.sendBarcodeWedge({
+            await window.electronAPI.sendBarcodeWedge({
                 barcode: barcode,
                 delayBeforeType: parseInt(delayTypingInput.value) || 0,
                 delayBeforeEnter: parseInt(delayEnterInput.value) || 0
@@ -135,13 +135,14 @@ function handleScanResult(barcode) {
         }
     }
 
-    // Play sound
+    // Play sound after successful wedge typing (if enabled) or immediately if disabled
     try {
         if(beepSound) {
             beepSound.currentTime = 0;
             beepSound.play().catch(e => console.log('Audio blocked', e));
         }
     } catch(e) {}
+
 
     // Flash UI
     updateStatus("Barcode Detected!", "#d5f5e3", "#27ae60");
