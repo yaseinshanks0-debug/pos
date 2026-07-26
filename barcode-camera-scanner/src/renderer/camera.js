@@ -1,55 +1,105 @@
-// Camera and device management logic
+// Basic Camera Preview Logic (Phase 1)
 
-let selectedDeviceId;
-let codeReader;
+let stream = null;
+let currentDeviceId = null;
+
+const videoElement = document.getElementById('video');
+const cameraSelect = document.getElementById('camera-select');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+const statusIndicator = document.getElementById('status');
+const overlay = document.querySelector('.scanner-overlay');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // We expect ZXing to be loaded globally from the script tag
-    if (typeof ZXing !== 'undefined') {
-        // Create reader supporting all 1D and 2D formats (EAN-13, EAN-8, UPC-A, UPC-E, Code 128, Code 39, QR Code)
-        codeReader = new ZXing.BrowserMultiFormatReader();
-        await initializeCameras();
-    } else {
-        console.error("ZXing library not found.");
-        document.getElementById('status').innerText = "Error: ZXing not loaded.";
-        document.getElementById('status').style.color = "red";
-    }
+    await initializeCameras();
 });
 
 async function initializeCameras() {
-    const select = document.getElementById('camera-select');
     try {
-        const videoInputDevices = await codeReader.listVideoInputDevices();
+        // Request initial permission to enumerate devices properly
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tempStream.getTracks().forEach(track => track.stop());
 
-        select.innerHTML = '';
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-        if (videoInputDevices.length === 0) {
+        cameraSelect.innerHTML = '';
+
+        if (videoDevices.length === 0) {
             const option = document.createElement('option');
             option.text = "No camera found";
-            select.appendChild(option);
+            cameraSelect.appendChild(option);
             return;
         }
 
-        videoInputDevices.forEach((element) => {
+        videoDevices.forEach((device, index) => {
             const option = document.createElement('option');
-            option.text = element.label || `Camera ${select.length + 1}`;
-            option.value = element.deviceId;
-            select.appendChild(option);
+            option.text = device.label || `Camera ${index + 1}`;
+            option.value = device.deviceId;
+            cameraSelect.appendChild(option);
         });
 
-        selectedDeviceId = videoInputDevices[0].deviceId;
+        currentDeviceId = videoDevices[0].deviceId;
 
-        select.addEventListener('change', (e) => {
-            selectedDeviceId = e.target.value;
-            // If scanner is running, restart it with new camera
-            if (isScanning) {
-                stopScanning();
-                setTimeout(() => startScanning(), 500);
+        cameraSelect.addEventListener('change', (e) => {
+            currentDeviceId = e.target.value;
+            if (stream) {
+                stopCamera();
+                setTimeout(() => startCamera(), 500);
             }
         });
 
     } catch (err) {
         console.error("Error listing devices", err);
-        select.innerHTML = '<option>Error loading cameras</option>';
+        cameraSelect.innerHTML = '<option>Error loading cameras</option>';
+        updateStatus("Camera access denied", "#fadbd8", "#c0392b");
     }
 }
+
+async function startCamera() {
+    if (!currentDeviceId) return;
+
+    try {
+        const constraints = {
+            video: {
+                deviceId: { exact: currentDeviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElement.srcObject = stream;
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        overlay.classList.add('active');
+        updateStatus("Camera Active", "#e8f8f5", "#16a085");
+
+    } catch (err) {
+        console.error("Error starting camera:", err);
+        updateStatus("Failed to start camera", "#fadbd8", "#c0392b");
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        videoElement.srcObject = null;
+        stream = null;
+    }
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    overlay.classList.remove('active');
+    updateStatus("Camera Stopped", "#f2f3f4", "#7f8c8d");
+}
+
+function updateStatus(text, bgColor, textColor) {
+    statusIndicator.innerText = text;
+    statusIndicator.style.backgroundColor = bgColor;
+    statusIndicator.style.color = textColor;
+}
+
+startBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);

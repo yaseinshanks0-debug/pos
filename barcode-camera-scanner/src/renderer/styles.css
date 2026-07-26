@@ -109,6 +109,11 @@ video {
     justify-content: center;
     align-items: center;
     pointer-events: none;
+    display: none; /* Hidden until camera starts */
+}
+
+.scanner-overlay.active {
+    display: flex;
 }
 
 .scanner-overlay::after {
@@ -168,62 +173,9 @@ video {
     margin-bottom: 15px;
 }
 
-.scan-result-large {
-    font-size: 2rem;
-    font-family: monospace;
-    text-align: center;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    color: #2980b9;
-    font-weight: bold;
-}
-
-.product-details {
-    flex: 1;
-}
-
-.product-details table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.product-details th, .product-details td {
-    text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-}
-
 .placeholder-text {
     color: #7f8c8d;
     text-align: center;
     font-style: italic;
-    margin-top: 20px;
-}
-
-.history-list {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.history-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    font-size: 0.9rem;
-}
-
-.history-item:last-child {
-    border-bottom: none;
-}
-
-.history-barcode {
-    font-weight: bold;
-    color: #34495e;
-}
-
-.history-time {
-    color: #7f8c8d;
-    font-size: 0.8rem;
+    margin-top: 10px;
 }
