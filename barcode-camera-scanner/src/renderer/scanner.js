@@ -97,24 +97,22 @@ async function fetchProductDetails(barcode) {
             const product = await response.json();
             displayProduct(product);
         } else {
+            const errorDiv = document.createElement('div');
+            errorDiv.style = "color: #e74c3c; padding: 10px; background: #fadbd8; border-radius: 4px;";
 
-    const errorDiv = document.createElement('div');
-    errorDiv.style = "color: #e74c3c; padding: 10px; background: #fadbd8; border-radius: 4px;";
+            const strongText = document.createElement('strong');
+            strongText.textContent = "Product Not Found";
 
-    const strongText = document.createElement('strong');
-    strongText.textContent = "Product Not Found";
+            const br = document.createElement('br');
 
-    const br = document.createElement('br');
+            const textNode = document.createTextNode("Barcode: " + barcode);
 
-    const textNode = document.createTextNode("Barcode: " + barcode);
+            errorDiv.appendChild(strongText);
+            errorDiv.appendChild(br);
+            errorDiv.appendChild(textNode);
 
-    errorDiv.appendChild(strongText);
-    errorDiv.appendChild(br);
-    errorDiv.appendChild(textNode);
-
-    productInfoDiv.innerHTML = '';
-    productInfoDiv.appendChild(errorDiv);
-
+            productInfoDiv.innerHTML = '';
+            productInfoDiv.appendChild(errorDiv);
         }
     } catch (err) {
         console.error('Error fetching product:', err);
@@ -137,49 +135,11 @@ function displayProduct(product) {
 
     document.getElementById('p-name').textContent = product.name;
     document.getElementById('p-category').textContent = product.category || 'N/A';
-    document.getElementById('p-price').textContent = '
-}
+    document.getElementById('p-price').textContent = '$' + product.price.toFixed(2);
 
-function addToHistory(barcode) {
-    const time = new Date().toLocaleTimeString();
-    const item = document.createElement('div');
-    item.className = 'history-item';
-
-    const barcodeSpan = document.createElement('span');
-    barcodeSpan.className = 'history-barcode';
-    barcodeSpan.textContent = barcode;
-
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'history-time';
-    timeSpan.textContent = time;
-
-    item.appendChild(barcodeSpan);
-    item.appendChild(timeSpan);
-
-    historyListDiv.prepend(item);
-
-    // Keep only last 20
-    if (historyListDiv.children.length > 20) {
-        historyListDiv.removeChild(historyListDiv.lastChild);
-    }
-}
-
-async function recordScan(barcode) {
-    try {
-        await fetch('http://localhost:3000/api/scans', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ barcode })
-        });
-    } catch (err) {
-        console.error('Error recording scan:', err);
-    }
-}
- + product.price.toFixed(2);
     const pStock = document.getElementById('p-stock');
     pStock.textContent = product.stock_quantity + ' units';
     pStock.style.color = stockColor;
-
 }
 
 function addToHistory(barcode) {
