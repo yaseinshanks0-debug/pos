@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Barcode Scanner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>POS Barcode Scanner</h1>
+            <div class="controls">
+                <select id="camera-select" class="camera-select">
+                    <option value="">Loading cameras...</option>
+                </select>
+                <button id="start-btn" class="btn btn-primary">Start Scanner</button>
+                <button id="stop-btn" class="btn btn-danger" disabled>Stop Scanner</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Scanner -->
+            <div class="scanner-panel">
+                <div class="video-container">
+                    <video id="video" width="100%" height="100%"></video>
+                    <div class="scanner-overlay">
+                        <div class="laser"></div>
+                    </div>
+                </div>
+                <div id="status" class="status-indicator">Scanner Ready</div>
+            </div>
+
+            <!-- Right Panel: Info -->
+            <div class="info-panel">
+                <div class="panel-section">
+                    <h2>Last Scanned</h2>
+                    <div id="last-scanned" class="scan-result-large">---</div>
+                </div>
+
+                <div class="panel-section product-details">
+                    <h2>Product Details</h2>
+                    <div id="product-info">
+                        <p class="placeholder-text">Scan a barcode to see details</p>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Scan History</h2>
+                    <div class="history-list" id="history-list">
+                        <!-- History items will be appended here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The audio for beep -->
+    <audio id="beep" src="../../assets/beep.mp3"></audio>
+
+    <script src="../../node_modules/@zxing/library/umd/index.min.js"></script>
+    <script src="camera.js"></script>
+    <script src="scanner.js"></script>
+</body>
+</html>
