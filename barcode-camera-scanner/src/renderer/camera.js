@@ -31,14 +31,29 @@ wedgeModeCheckbox.addEventListener('change', (e) => {
     }
 });
 
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (typeof ZXing !== 'undefined') {
-        codeReader = new ZXing.BrowserMultiFormatReader();
+        // Initialize multi format reader with specific hints for supported barcode formats
+        const hints = new Map();
+        const formats = [
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.QR_CODE
+        ];
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+
+        codeReader = new ZXing.BrowserMultiFormatReader(hints);
         await initializeCameras();
     } else {
         updateStatus("Error: ZXing not loaded.", "#fadbd8", "#c0392b");
     }
 });
+
 
 async function initializeCameras() {
     try {
@@ -77,24 +92,42 @@ async function initializeCameras() {
     }
 }
 
+
 async function startScanner() {
     if (!selectedDeviceId || !codeReader) return;
 
     isScanning = true;
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    overlay.classList.add('active');
+    if(startBtn) startBtn.disabled = true;
+    if(stopBtn) stopBtn.disabled = false;
+    if(overlay) overlay.classList.add('active');
     updateStatus("Scanner Active", "#e8f8f5", "#16a085");
 
     try {
-        await codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+        console.log("Attempting to start continuous scan on device: ", selectedDeviceId);
+
+        // Use constraints to force a higher resolution (1280x720) for better detection
+        const constraints = {
+            video: {
+                deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
+        // decodeFromConstraints enables continuous scanning on a stream with the given constraints
+        await codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
             if (result) {
+                console.log("Barcode Detected:", result.text, "Format:", result.barcodeFormat);
                 handleScanResult(result.text);
             }
-            if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error("Scanner Error:", err);
+            if (err) {
+                // ZXing throws NotFoundException constantly for frames without barcodes. This is normal.
+                if (!(err instanceof ZXing.NotFoundException)) {
+                    console.error("Scanner Error Details:", err);
+                }
             }
         });
+
     } catch (err) {
         console.error("Failed to start scanner:", err);
         updateStatus("Failed to start scanner", "#fadbd8", "#c0392b");
