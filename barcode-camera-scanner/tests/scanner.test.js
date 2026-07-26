@@ -14,6 +14,10 @@ document.body.innerHTML = `
   <div id="last-scanned"></div>
   <div id="history-list"></div>
   <audio id="beep"></audio>
+  <input type="checkbox" id="wedge-mode-checkbox">
+  <div id="wedge-settings" class="disabled"></div>
+  <input type="number" id="delay-typing" value="0">
+  <input type="number" id="delay-enter" value="0">
 `;
 
 const { handleScanResult, DEBOUNCE_TIME } = require('../src/renderer/camera.js');

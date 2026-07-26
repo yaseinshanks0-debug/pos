@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { keyboard, Key } = require('@nut-tree-fork/nut-js');
 
 let mainWindow;
 
@@ -33,5 +34,32 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
     if (mainWindow === null) {
         createWindow();
+    }
+});
+
+// IPC handler for keyboard wedge simulation
+ipcMain.on('wedge-barcode', async (event, { barcode, delayBeforeType, delayBeforeEnter }) => {
+    try {
+        // We delay typing if configured
+        if (delayBeforeType > 0) {
+            await new Promise(resolve => setTimeout(resolve, delayBeforeType));
+        }
+
+        // Configure nut-js keyboard typing delay (very fast)
+        keyboard.config.autoDelayMs = 5;
+
+        // Type the barcode as a string
+        await keyboard.type(barcode);
+
+        // Delay before pressing enter if configured
+        if (delayBeforeEnter > 0) {
+            await new Promise(resolve => setTimeout(resolve, delayBeforeEnter));
+        }
+
+        // Press Enter
+        await keyboard.type(Key.Enter);
+
+    } catch (err) {
+        console.error("Failed to type barcode via wedge:", err);
     }
 });

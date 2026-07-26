@@ -34,6 +34,24 @@
 
             <!-- Right Panel: Info -->
             <div class="info-panel">
+                <div class="panel-section settings-section">
+                    <h2>Settings</h2>
+                    <label class="setting-item">
+                        <input type="checkbox" id="wedge-mode-checkbox">
+                        <strong>Enable Keyboard Wedge Mode</strong>
+                    </label>
+                    <div id="wedge-settings" class="wedge-settings disabled">
+                        <label>
+                            Delay before typing (ms):
+                            <input type="number" id="delay-typing" value="0" min="0" max="500">
+                        </label>
+                        <label>
+                            Delay before Enter (ms):
+                            <input type="number" id="delay-enter" value="0" min="0" max="1000">
+                        </label>
+                    </div>
+                </div>
+
                 <div class="panel-section">
                     <h2>Last Scanned</h2>
                     <div id="last-scanned" class="scan-result-large">---</div>

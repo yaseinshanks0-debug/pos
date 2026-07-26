@@ -1,4 +1,4 @@
-// Camera and Scanner Logic (Phase 2)
+// Camera, Scanner, and Keyboard Wedge Logic
 
 let codeReader;
 let selectedDeviceId;
@@ -17,9 +17,22 @@ const lastScannedDisplay = document.getElementById('last-scanned');
 const historyListDiv = document.getElementById('history-list');
 const beepSound = document.getElementById('beep');
 
+// Settings Elements
+const wedgeModeCheckbox = document.getElementById('wedge-mode-checkbox');
+const wedgeSettingsDiv = document.getElementById('wedge-settings');
+const delayTypingInput = document.getElementById('delay-typing');
+const delayEnterInput = document.getElementById('delay-enter');
+
+wedgeModeCheckbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        wedgeSettingsDiv.classList.remove('disabled');
+    } else {
+        wedgeSettingsDiv.classList.add('disabled');
+    }
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (typeof ZXing !== 'undefined') {
-        // Initialize multi format reader for EAN, UPC, Code128, QR, etc.
         codeReader = new ZXing.BrowserMultiFormatReader();
         await initializeCameras();
     } else {
@@ -111,6 +124,17 @@ function handleScanResult(barcode) {
     lastScannedCode = barcode;
     lastScanTime = now;
 
+    // Perform Keyboard Wedge Simulation if enabled
+    if (wedgeModeCheckbox && wedgeModeCheckbox.checked) {
+        if (window.electronAPI && window.electronAPI.sendBarcodeWedge) {
+            window.electronAPI.sendBarcodeWedge({
+                barcode: barcode,
+                delayBeforeType: parseInt(delayTypingInput.value) || 0,
+                delayBeforeEnter: parseInt(delayEnterInput.value) || 0
+            });
+        }
+    }
+
     // Play sound
     try {
         if(beepSound) {
@@ -126,7 +150,7 @@ function handleScanResult(barcode) {
     }, 500);
 
     // Update UI
-    lastScannedDisplay.innerText = barcode;
+    if (lastScannedDisplay) lastScannedDisplay.innerText = barcode;
 
     const time = new Date().toLocaleTimeString();
     const item = document.createElement('div');
@@ -143,21 +167,23 @@ function handleScanResult(barcode) {
     item.appendChild(barcodeSpan);
     item.appendChild(timeSpan);
 
-    historyListDiv.prepend(item);
-
-    if (historyListDiv.children.length > 20) {
-        historyListDiv.removeChild(historyListDiv.lastChild);
+    if (historyListDiv) {
+        historyListDiv.prepend(item);
+        if (historyListDiv.children.length > 20) {
+            historyListDiv.removeChild(historyListDiv.lastChild);
+        }
     }
 }
 
 function updateStatus(text, bgColor, textColor) {
+    if (!statusIndicator) return;
     statusIndicator.innerText = text;
     statusIndicator.style.backgroundColor = bgColor;
     statusIndicator.style.color = textColor;
 }
 
-startBtn.addEventListener('click', startScanner);
-stopBtn.addEventListener('click', stopScanner);
+if (startBtn) startBtn.addEventListener('click', startScanner);
+if (stopBtn) stopBtn.addEventListener('click', stopScanner);
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {

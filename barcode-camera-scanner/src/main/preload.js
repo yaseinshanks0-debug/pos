@@ -1,6 +1,5 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose safe APIs to renderer
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Add any required node modules logic here later when we connect SQLite
+    sendBarcodeWedge: (barcodeData) => ipcRenderer.send('wedge-barcode', barcodeData)
 });
