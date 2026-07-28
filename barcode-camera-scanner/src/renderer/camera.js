@@ -1,0 +1,225 @@
+// Camera, Scanner, and Keyboard Wedge Logic
+
+let codeReader;
+let selectedDeviceId;
+let isScanning = false;
+let lastScannedCode = null;
+let lastScanTime = 0;
+const DEBOUNCE_TIME = 2000;
+
+const videoElement = document.getElementById('video');
+const cameraSelect = document.getElementById('camera-select');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+const statusIndicator = document.getElementById('status');
+const overlay = document.querySelector('.scanner-overlay');
+const lastScannedDisplay = document.getElementById('last-scanned');
+const historyListDiv = document.getElementById('history-list');
+const beepSound = document.getElementById('beep');
+
+// Settings Elements
+const wedgeModeCheckbox = document.getElementById('wedge-mode-checkbox');
+const wedgeSettingsDiv = document.getElementById('wedge-settings');
+const delayTypingInput = document.getElementById('delay-typing');
+const delayEnterInput = document.getElementById('delay-enter');
+
+wedgeModeCheckbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        wedgeSettingsDiv.classList.remove('disabled');
+    } else {
+        wedgeSettingsDiv.classList.add('disabled');
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof ZXing !== 'undefined') {
+        // Initialize multi format reader with specific hints for supported barcode formats
+        const hints = new Map();
+        const formats = [
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.QR_CODE
+        ];
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+
+        codeReader = new ZXing.BrowserMultiFormatReader(hints);
+        await initializeCameras();
+    } else {
+        updateStatus("Error: ZXing not loaded.", "#fadbd8", "#c0392b");
+    }
+});
+
+
+async function initializeCameras() {
+    try {
+        const videoInputDevices = await codeReader.listVideoInputDevices();
+
+        cameraSelect.innerHTML = '';
+
+        if (videoInputDevices.length === 0) {
+            const option = document.createElement('option');
+            option.text = "No camera found";
+            cameraSelect.appendChild(option);
+            return;
+        }
+
+        videoInputDevices.forEach((element, index) => {
+            const option = document.createElement('option');
+            option.text = element.label || "Camera " + (index + 1);
+            option.value = element.deviceId;
+            cameraSelect.appendChild(option);
+        });
+
+        selectedDeviceId = videoInputDevices[0].deviceId;
+
+        cameraSelect.addEventListener('change', (e) => {
+            selectedDeviceId = e.target.value;
+            if (isScanning) {
+                stopScanner();
+                setTimeout(() => startScanner(), 500);
+            }
+        });
+
+    } catch (err) {
+        console.error("Error listing devices", err);
+        cameraSelect.innerHTML = '<option>Error loading cameras</option>';
+        updateStatus("Camera access denied", "#fadbd8", "#c0392b");
+    }
+}
+
+
+async function startScanner() {
+    if (!selectedDeviceId || !codeReader) return;
+
+    isScanning = true;
+    if(startBtn) startBtn.disabled = true;
+    if(stopBtn) stopBtn.disabled = false;
+    if(overlay) overlay.classList.add('active');
+    updateStatus("Scanner Active", "#e8f8f5", "#16a085");
+
+    try {
+        console.log("Attempting to start continuous scan on device: ", selectedDeviceId);
+
+        // Use constraints to force a higher resolution (1280x720) for better detection
+        const constraints = {
+            video: {
+                deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
+        // decodeFromConstraints enables continuous scanning on a stream with the given constraints
+        await codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+            if (result) {
+                console.log("Barcode Detected:", result.text, "Format:", result.barcodeFormat);
+                handleScanResult(result.text);
+            }
+            if (err) {
+                // ZXing throws NotFoundException constantly for frames without barcodes. This is normal.
+                if (!(err instanceof ZXing.NotFoundException)) {
+                    console.error("Scanner Error Details:", err);
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Failed to start scanner:", err);
+        updateStatus("Failed to start scanner", "#fadbd8", "#c0392b");
+        stopScanner();
+    }
+}
+
+function stopScanner() {
+    isScanning = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    overlay.classList.remove('active');
+    updateStatus("Scanner Stopped", "#f2f3f4", "#7f8c8d");
+
+    if (codeReader) {
+        codeReader.reset();
+    }
+}
+
+async function handleScanResult(barcode) {
+    const now = Date.now();
+
+    if (barcode === lastScannedCode && (now - lastScanTime) < DEBOUNCE_TIME) {
+        return; // debounce
+    }
+
+    lastScannedCode = barcode;
+    lastScanTime = now;
+
+    // Perform Keyboard Wedge Simulation if enabled
+    if (wedgeModeCheckbox && wedgeModeCheckbox.checked) {
+        if (window.electronAPI && window.electronAPI.sendBarcodeWedge) {
+            await window.electronAPI.sendBarcodeWedge({
+                barcode: barcode,
+                delayBeforeType: parseInt(delayTypingInput.value) || 0,
+                delayBeforeEnter: parseInt(delayEnterInput.value) || 0
+            });
+        }
+    }
+
+    // Play sound after successful wedge typing (if enabled) or immediately if disabled
+    try {
+        if(beepSound) {
+            beepSound.currentTime = 0;
+            beepSound.play().catch(e => console.log('Audio blocked', e));
+        }
+    } catch(e) {}
+
+
+    // Flash UI
+    updateStatus("Barcode Detected!", "#d5f5e3", "#27ae60");
+    setTimeout(() => {
+        if (isScanning) updateStatus("Scanner Active", "#e8f8f5", "#16a085");
+    }, 500);
+
+    // Update UI
+    if (lastScannedDisplay) lastScannedDisplay.innerText = barcode;
+
+    const time = new Date().toLocaleTimeString();
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const barcodeSpan = document.createElement('span');
+    barcodeSpan.className = 'history-barcode';
+    barcodeSpan.textContent = barcode;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'history-time';
+    timeSpan.textContent = time;
+
+    item.appendChild(barcodeSpan);
+    item.appendChild(timeSpan);
+
+    if (historyListDiv) {
+        historyListDiv.prepend(item);
+        if (historyListDiv.children.length > 20) {
+            historyListDiv.removeChild(historyListDiv.lastChild);
+        }
+    }
+}
+
+function updateStatus(text, bgColor, textColor) {
+    if (!statusIndicator) return;
+    statusIndicator.innerText = text;
+    statusIndicator.style.backgroundColor = bgColor;
+    statusIndicator.style.color = textColor;
+}
+
+if (startBtn) startBtn.addEventListener('click', startScanner);
+if (stopBtn) stopBtn.addEventListener('click', stopScanner);
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { handleScanResult, DEBOUNCE_TIME };
+}
