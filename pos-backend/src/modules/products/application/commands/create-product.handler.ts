@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { CreateProductCommand } from './create-product.command';
 import { IProductRepository } from '../../domain/repositories/product.repository.interface';
@@ -12,6 +12,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   constructor(
     @Inject(IProductRepository)
     private readonly productRepository: IProductRepository,
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: CreateProductCommand): Promise<string> {
@@ -21,7 +22,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     }
 
     const productId = randomUUID();
-    const product = new Product(
+    const product = Product.create(
       productId,
       command.name,
       command.sku,
@@ -29,7 +30,6 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       command.brandId,
       command.unitOfMeasure,
       command.isTracked,
-      true,
       command.description || null
     );
 
@@ -54,6 +54,10 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     }
 
     await this.productRepository.save(product);
+
+    // Publish all accumulated domain events (e.g., ProductCreatedEvent)
+    product.domainEvents.forEach(event => this.eventBus.publish(event));
+    product.clearEvents();
 
     return productId;
   }

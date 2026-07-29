@@ -1,5 +1,7 @@
 import { Barcode } from '../value-objects/barcode.vo';
 import { Money } from '../value-objects/money.vo';
+import { AggregateRoot } from './aggregate-root';
+import { ProductCreatedEvent } from '../events/product-created.event';
 
 export class ProductPrice {
   constructor(
@@ -12,7 +14,7 @@ export class ProductPrice {
   ) {}
 }
 
-export class Product {
+export class Product extends AggregateRoot {
   constructor(
     public readonly id: string,
     public name: string,
@@ -25,7 +27,35 @@ export class Product {
     public description: string | null = null,
     private _barcodes: Barcode[] = [],
     private _prices: ProductPrice[] = []
-  ) {}
+  ) {
+    super();
+  }
+
+  static create(
+    id: string,
+    name: string,
+    sku: string,
+    categoryId: string | null,
+    brandId: string | null,
+    unitOfMeasure: string,
+    isTracked: boolean,
+    description: string | null = null
+  ): Product {
+    const product = new Product(
+      id,
+      name,
+      sku,
+      categoryId,
+      brandId,
+      unitOfMeasure,
+      isTracked,
+      true,
+      description
+    );
+
+    product.addDomainEvent(new ProductCreatedEvent(id, sku));
+    return product;
+  }
 
   get barcodes(): ReadonlyArray<Barcode> {
     return this._barcodes;

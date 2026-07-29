@@ -3,10 +3,12 @@ import { CreateProductCommand } from './create-product.command';
 import { IProductRepository } from '../../domain/repositories/product.repository.interface';
 import { Product } from '../../domain/entities/product.entity';
 import { randomUUID } from 'crypto';
+import { EventBus } from '@nestjs/cqrs';
 
 describe('CreateProductHandler', () => {
   let handler: CreateProductHandler;
   let mockProductRepo: jest.Mocked<IProductRepository>;
+  let mockEventBus: jest.Mocked<EventBus>;
 
   beforeEach(() => {
     mockProductRepo = {
@@ -19,7 +21,12 @@ describe('CreateProductHandler', () => {
       delete: jest.fn(),
     };
 
-    handler = new CreateProductHandler(mockProductRepo);
+    mockEventBus = {
+      publish: jest.fn(),
+      publishAll: jest.fn(),
+    } as any;
+
+    handler = new CreateProductHandler(mockProductRepo, mockEventBus);
   });
 
   it('should successfully create a product', async () => {
@@ -41,6 +48,7 @@ describe('CreateProductHandler', () => {
 
     expect(productId).toBeDefined();
     expect(mockProductRepo.save).toHaveBeenCalledTimes(1);
+    expect(mockEventBus.publish).toHaveBeenCalledTimes(1);
 
     const savedProduct = mockProductRepo.save.mock.calls[0][0] as Product;
     expect(savedProduct.name).toBe('Test Product');
@@ -50,7 +58,7 @@ describe('CreateProductHandler', () => {
   });
 
   it('should throw an error if SKU already exists', async () => {
-    const existingProduct = new Product(randomUUID(), 'Existing', 'SKU-TEST-1', null, null, 'EA', true, true);
+    const existingProduct = Product.create(randomUUID(), 'Existing', 'SKU-TEST-1', null, null, 'EA', true);
     mockProductRepo.findBySku.mockResolvedValue(existingProduct);
 
     const command = new CreateProductCommand(
@@ -64,5 +72,6 @@ describe('CreateProductHandler', () => {
 
     await expect(handler.execute(command)).rejects.toThrow('Product with SKU SKU-TEST-1 already exists.');
     expect(mockProductRepo.save).not.toHaveBeenCalled();
+    expect(mockEventBus.publish).not.toHaveBeenCalled();
   });
 });

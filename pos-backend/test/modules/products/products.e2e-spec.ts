@@ -3,15 +3,18 @@ import { INestApplication } from '@nestjs/common';
 const request = require('supertest');
 import { ProductsModule } from '../../../src/modules/products/products.module';
 import { IProductRepository } from '../../../src/modules/products/domain/repositories/product.repository.interface';
+import { Product } from '../../../src/modules/products/domain/entities/product.entity';
 import { randomUUID } from 'crypto';
 
 describe('ProductsController (e2e)', () => {
   let app: INestApplication;
+
+  const mockProduct = Product.create(randomUUID(), 'Test', 'SKU', null, null, 'EA', true);
   let mockProductRepository = {
     save: jest.fn(),
     findBySku: jest.fn().mockResolvedValue(null),
     findAll: jest.fn().mockResolvedValue([]),
-    findById: jest.fn().mockResolvedValue({ id: randomUUID(), name: 'Test', sku: 'SKU' }),
+    findById: jest.fn().mockResolvedValue(mockProduct),
     findByBarcode: jest.fn(),
   };
 
@@ -41,7 +44,7 @@ describe('ProductsController (e2e)', () => {
         isTracked: true,
       })
       .expect(201)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.id).toBeDefined();
       });
   });
@@ -55,9 +58,9 @@ describe('ProductsController (e2e)', () => {
 
   it('/products/:id (GET) should return a product', () => {
     return request(app.getHttpServer())
-      .get(`/products/${randomUUID()}`)
+      .get(`/products/${mockProduct.id}`)
       .expect(200)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.name).toEqual('Test');
       });
   });

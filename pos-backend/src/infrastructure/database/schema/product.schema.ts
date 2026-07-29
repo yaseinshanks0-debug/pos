@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, varchar, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, varchar, decimal, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const categories = pgTable('categories', {
@@ -9,7 +9,10 @@ export const categories = pgTable('categories', {
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('categories_parent_id_idx').on(table.parentId),
+  index('categories_is_active_idx').on(table.isActive),
+]);
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
   parent: one(categories, {
@@ -28,7 +31,9 @@ export const brands = pgTable('brands', {
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('brands_is_active_idx').on(table.isActive),
+]);
 
 export const brandsRelations = relations(brands, ({ many }) => ({
   products: many(products),
@@ -46,7 +51,12 @@ export const products = pgTable('products', {
   isTracked: boolean('is_tracked').default(true).notNull(), // Inventory tracking
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('products_category_id_idx').on(table.categoryId),
+  index('products_brand_id_idx').on(table.brandId),
+  index('products_sku_idx').on(table.sku),
+  index('products_is_active_idx').on(table.isActive),
+]);
 
 export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
@@ -68,7 +78,10 @@ export const productBarcodes = pgTable('product_barcodes', {
   barcodeType: varchar('barcode_type', { length: 50 }), // UPC, EAN, CODE128
   isPrimary: boolean('is_primary').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('product_barcodes_product_id_idx').on(table.productId),
+  index('product_barcodes_barcode_idx').on(table.barcode),
+]);
 
 export const productBarcodesRelations = relations(productBarcodes, ({ one }) => ({
   product: one(products, {
@@ -88,7 +101,11 @@ export const productPrices = pgTable('product_prices', {
   endDate: timestamp('end_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('product_prices_product_id_idx').on(table.productId),
+  index('product_prices_store_id_idx').on(table.storeId),
+  index('product_prices_price_tier_idx').on(table.priceTier),
+]);
 
 export const productPricesRelations = relations(productPrices, ({ one }) => ({
   product: one(products, {

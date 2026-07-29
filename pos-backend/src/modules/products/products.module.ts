@@ -7,6 +7,7 @@ import { ProductRepository, DATABASE_CONNECTION } from './infrastructure/reposit
 import { IProductRepository } from './domain/repositories/product.repository.interface';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import * as schema from '../../infrastructure/database/schema/product.schema';
 
 const commandHandlers = [CreateProductHandler];
 const queryHandlers = [GetProductHandler, GetProductByBarcodeHandler, ListProductsHandler];
@@ -20,11 +21,10 @@ const queryHandlers = [GetProductHandler, GetProductByBarcodeHandler, ListProduc
     {
       provide: DATABASE_CONNECTION,
       useFactory: () => {
-        // In a real app, you would use ConfigModule to get these details
         const pool = new Pool({
           connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/pos',
         });
-        return drizzle(pool);
+        return drizzle(pool, { schema });
       },
     },
     {

@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { IProductRepository } from '../../domain/repositories/product.repository.interface';
 import { Product, ProductPrice } from '../../domain/entities/product.entity';
 import { Barcode } from '../../domain/value-objects/barcode.vo';
@@ -50,6 +50,7 @@ export class ProductRepository implements IProductRepository {
       });
     }
 
+    product.clearEvents(); // Reset domain events after loading from db
     return product;
   }
 
@@ -145,21 +146,51 @@ export class ProductRepository implements IProductRepository {
   }
 
   async update(product: Product): Promise<void> {
-    // Basic update logic; in production, this should handle
-    // delta updates for barcodes and prices carefully
-    await this.db.update(schema.products)
-      .set({
-        name: product.name,
-        sku: product.sku,
-        description: product.description,
-        categoryId: product.categoryId,
-        brandId: product.brandId,
-        unitOfMeasure: product.unitOfMeasure,
-        isTracked: product.isTracked,
-        isActive: product.isActive,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.products.id, product.id));
+    await this.db.transaction(async (tx) => {
+      await tx.update(schema.products)
+        .set({
+          name: product.name,
+          sku: product.sku,
+          description: product.description,
+          categoryId: product.categoryId,
+          brandId: product.brandId,
+          unitOfMeasure: product.unitOfMeasure,
+          isTracked: product.isTracked,
+          isActive: product.isActive,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.products.id, product.id));
+
+      // Handle Barcodes Delta
+      await tx.delete(schema.productBarcodes).where(eq(schema.productBarcodes.productId, product.id));
+      if (product.barcodes.length > 0) {
+        await tx.insert(schema.productBarcodes).values(
+          product.barcodes.map((b) => ({
+            productId: product.id,
+            barcode: b.value,
+            barcodeType: b.type,
+            isPrimary: b.isPrimary,
+          }))
+        );
+      }
+
+      // Handle Prices Delta
+      await tx.delete(schema.productPrices).where(eq(schema.productPrices.productId, product.id));
+      if (product.prices.length > 0) {
+        await tx.insert(schema.productPrices).values(
+          product.prices.map((p) => ({
+            id: p.id,
+            productId: product.id,
+            priceTier: p.priceTier,
+            storeId: p.storeId,
+            price: p.price.amount.toString(),
+            currency: p.price.currency,
+            effectiveDate: p.effectiveDate,
+            endDate: p.endDate,
+          }))
+        );
+      }
+    });
   }
 
   async delete(id: string): Promise<void> {

@@ -4,6 +4,34 @@ import { GetProductQuery, GetProductByBarcodeQuery, ListProductsQuery } from './
 import { IProductRepository } from '../../domain/repositories/product.repository.interface';
 import { Product } from '../../domain/entities/product.entity';
 
+// Helper to map domain entity to primitive DTO to avoid serialization leaks
+function mapProductToDto(product: Product | null) {
+  if (!product) return null;
+  return {
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    description: product.description,
+    categoryId: product.categoryId,
+    brandId: product.brandId,
+    unitOfMeasure: product.unitOfMeasure,
+    isTracked: product.isTracked,
+    isActive: product.isActive,
+    barcodes: product.barcodes.map(b => ({
+      value: b.value,
+      type: b.type,
+      isPrimary: b.isPrimary,
+    })),
+    prices: product.prices.map(p => ({
+      id: p.id,
+      price: p.price.amount,
+      currency: p.price.currency,
+      priceTier: p.priceTier,
+      storeId: p.storeId,
+    })),
+  };
+}
+
 @QueryHandler(GetProductQuery)
 export class GetProductHandler implements IQueryHandler<GetProductQuery> {
   constructor(
@@ -11,8 +39,9 @@ export class GetProductHandler implements IQueryHandler<GetProductQuery> {
     private readonly productRepository: IProductRepository,
   ) {}
 
-  async execute(query: GetProductQuery): Promise<Product | null> {
-    return this.productRepository.findById(query.id);
+  async execute(query: GetProductQuery) {
+    const product = await this.productRepository.findById(query.id);
+    return mapProductToDto(product);
   }
 }
 
@@ -23,8 +52,9 @@ export class GetProductByBarcodeHandler implements IQueryHandler<GetProductByBar
     private readonly productRepository: IProductRepository,
   ) {}
 
-  async execute(query: GetProductByBarcodeQuery): Promise<Product | null> {
-    return this.productRepository.findByBarcode(query.barcode);
+  async execute(query: GetProductByBarcodeQuery) {
+    const product = await this.productRepository.findByBarcode(query.barcode);
+    return mapProductToDto(product);
   }
 }
 
@@ -35,7 +65,8 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery> {
     private readonly productRepository: IProductRepository,
   ) {}
 
-  async execute(query: ListProductsQuery): Promise<Product[]> {
-    return this.productRepository.findAll(query.limit, query.offset);
+  async execute(query: ListProductsQuery) {
+    const products = await this.productRepository.findAll(query.limit, query.offset);
+    return products.map(mapProductToDto);
   }
 }
