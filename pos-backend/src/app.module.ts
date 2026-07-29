@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductsModule } from './modules/products/products.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { PricingModule } from './modules/pricing/pricing.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { InventoryModule } from './modules/inventory/inventory.module';
       limit: 100,
     }]),
     ProductsModule,
-    InventoryModule
+    InventoryModule,
+    PricingModule
   ],
   controllers: [AppController],
   providers: [
