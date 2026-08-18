@@ -1,0 +1,177 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Clean Architecture Backend API
+  version: 1.0.0
+  description: API documentation for the enterprise backend system, covering inventory, purchasing, POS, accounting, and multi-store synchronization.
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+
+  /inventory/product:
+    post:
+      summary: Create a new product
+      security:
+        - BearerAuth: []
+      tags:
+        - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                categoryId:
+                  type: integer
+      responses:
+        '201':
+          description: Product created
+
+  /purchasing/po:
+    post:
+      summary: Create a purchase order
+      security:
+        - BearerAuth: []
+      tags:
+        - Purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vendorId:
+                  type: integer
+                storeId:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: integer
+                      orderedQty:
+                        type: integer
+                      unitCost:
+                        type: number
+      responses:
+        '201':
+          description: Purchase order created
+
+  /pos/checkout:
+    post:
+      summary: Process POS checkout
+      security:
+        - BearerAuth: []
+      tags:
+        - POS
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                paymentMethod:
+                  type: string
+      responses:
+        '200':
+          description: Sale completed
+
+  /reports/sales:
+    get:
+      summary: Get sales report
+      security:
+        - BearerAuth: []
+      tags:
+        - Reporting
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Sales report data
+
+  /crud/{entityName}:
+    get:
+      summary: Get all records for a generic entity
+      tags:
+        - Generic CRUD
+      parameters:
+        - name: entityName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of records
+    post:
+      summary: Create a record for a generic entity
+      tags:
+        - Generic CRUD
+      parameters:
+        - name: entityName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created

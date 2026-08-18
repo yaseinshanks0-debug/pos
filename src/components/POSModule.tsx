@@ -426,7 +426,7 @@ export const POSModule: React.FC<POSModuleProps> = ({ locale }) => {
           ) : (
             <div className="divide-y divide-slate-800/80 max-h-96 overflow-y-auto">
               {cart.map((item) => (
-                <div key={item.product.id} className="p-4 flex items-center justify-between gap-4">
+                <div key={item.product.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex-1">
                     <h4 className="text-xs font-semibold text-white">{item.product.name}</h4>
                     <p className="text-[10px] text-slate-500 mt-0.5">
@@ -434,48 +434,53 @@ export const POSModule: React.FC<POSModuleProps> = ({ locale }) => {
                     </p>
                   </div>
 
-                  {/* Quantity Actions */}
-                  <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5">
-                    <button
-                      onClick={() => updateQty(item.product.id, -1)}
-                      className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="px-2 text-xs font-semibold text-slate-200 w-6 text-center">
-                      {item.qty}
-                    </span>
-                    <button
-                      onClick={() => updateQty(item.product.id, 1)}
-                      className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-wrap">
+                    {/* Quantity Actions */}
+                    <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5">
+                      <button
+                        onClick={() => updateQty(item.product.id, -1)}
+                        className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="px-2 text-xs font-semibold text-slate-200 min-w-[24px] text-center">
+                        {item.qty}
+                      </span>
+                      <button
+                        onClick={() => updateQty(item.product.id, 1)}
+                        className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
 
-                  {/* Line item Discount */}
-                  <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 max-w-[80px]">
-                    <Percent size={10} className="text-slate-500" />
-                    <input
-                      type="number"
-                      value={item.discount || ""}
-                      onChange={(e) => updateLineDiscount(item.product.id, Number(e.target.value))}
-                      placeholder="0"
-                      className="w-full bg-transparent text-slate-300 text-xs focus:outline-none text-right"
-                    />
-                  </div>
+                    {/* Line item Discount */}
+                    <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 max-w-[70px]">
+                      <Percent size={10} className="text-slate-500" />
+                      <input
+                        type="number"
+                        value={item.discount || ""}
+                        onChange={(e) => updateLineDiscount(item.product.id, Number(e.target.value))}
+                        placeholder="0"
+                        className="w-full bg-transparent text-slate-300 text-xs focus:outline-none text-right"
+                      />
+                    </div>
 
-                  {/* Line Total and delete */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-200 w-16 text-right">
-                      ${(((item.product.salePrice ?? Number((item.product as any).retailPrice) ?? 0) * (1 - item.discount / 100)) * item.qty).toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => removeFromCart(item.product.id)}
-                      className="text-slate-500 hover:text-red-400 transition cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {/* Line Total and delete */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-200 min-w-[60px] text-right">
+                        ${(((item.product.salePrice ?? Number((item.product as any).retailPrice) ?? 0) * (1 - item.discount / 100)) * item.qty).toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="text-slate-500 hover:text-red-400 p-1 transition cursor-pointer"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

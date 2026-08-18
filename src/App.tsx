@@ -223,7 +223,7 @@ export default function App() {
         </header>
 
         {/* Dynamic Screen viewport */}
-        <main className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6 scrollbar-thin">
           {activeModule === "dashboard" && <ExecutiveDashboard locale={locale} />}
           {activeModule === "pos" && <POSModule locale={locale} />}
           {activeModule === "inventory" && <InventoryModule locale={locale} />}
@@ -235,6 +235,57 @@ export default function App() {
           {activeModule === "reports" && <ReportsModule locale={locale} />}
           {activeModule === "admin" && <AdminModule locale={locale} />}
         </main>
+
+        {/* Mobile Quick Action Bottom Bar */}
+        <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 z-30 flex items-center justify-around px-2 py-2 safe-area-bottom">
+          <button
+            onClick={() => setActiveModule("dashboard")}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition min-w-[50px] ${
+              activeModule === "dashboard" ? "text-emerald-400 font-bold" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <TrendingUp size={18} />
+            <span className="text-[10px] mt-0.5">{locale === "en" ? "BI" : "الرئيسية"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModule("pos")}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition min-w-[50px] ${
+              activeModule === "pos" ? "text-emerald-400 font-bold" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <CreditCard size={18} />
+            <span className="text-[10px] mt-0.5">{locale === "en" ? "POS" : "الكاشير"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModule("inventory")}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition min-w-[50px] ${
+              activeModule === "inventory" ? "text-emerald-400 font-bold" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <Package size={18} />
+            <span className="text-[10px] mt-0.5">{locale === "en" ? "Stock" : "المخزون"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModule("sales")}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition min-w-[50px] ${
+              activeModule === "sales" ? "text-emerald-400 font-bold" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <Users size={18} />
+            <span className="text-[10px] mt-0.5">{locale === "en" ? "Sales" : "المبيعات"}</span>
+          </button>
+
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center justify-center p-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition min-w-[50px]"
+          >
+            <Menu size={18} />
+            <span className="text-[10px] mt-0.5">{locale === "en" ? "More" : "المزيد"}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

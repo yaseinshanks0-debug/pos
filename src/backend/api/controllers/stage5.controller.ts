@@ -43,11 +43,7 @@ export class Stage5Controller {
 
   public listBankAccounts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const companyId = Number(req.query.companyId);
-      if (!companyId) {
-        res.status(400).json({ success: false, message: "companyId query param is required." });
-        return;
-      }
+      const companyId = Number(req.query.companyId || 1);
       const data = await this.service.listBankAccounts(companyId);
       const response: ApiResponse = {
         success: true,

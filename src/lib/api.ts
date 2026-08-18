@@ -480,8 +480,9 @@ class ApiClient {
   // ==========================================
   // Banking Module
   // ==========================================
-  public async listBankAccounts(): Promise<any[]> {
-    const res = await this.request("/stage5/bank-accounts");
+  public async listBankAccounts(companyId?: number): Promise<any[]> {
+    const query = companyId ? `?companyId=${companyId}` : "";
+    const res = await this.request(`/stage5/bank-accounts${query}`);
     return res.data || res || [];
   }
 

@@ -129,11 +129,12 @@ export class AccountingController {
   public updatePeriodStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const periodId = Number(req.params.id);
-      const { status, userId, reason } = req.body;
+      const { status, reason } = req.body;
+      const parsedUserId = Number(req.body.userId || req.body.closedById || req.body.performedByUserId || 1);
       const result = await this.accountingService.updatePeriodStatus(
         periodId,
         status,
-        Number(userId),
+        parsedUserId,
         reason
       );
       res.json(result);
@@ -145,10 +146,11 @@ export class AccountingController {
   public closeAccountingPeriod = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const periodId = Number(req.params.id);
-      const { userId, notes } = req.body;
+      const { notes } = req.body;
+      const parsedUserId = Number(req.body.userId || req.body.closedById || req.body.performedByUserId || 1);
       const result = await this.accountingService.closeAccountingPeriod(
         periodId,
-        Number(userId),
+        parsedUserId,
         notes
       );
       res.json(result);
@@ -160,10 +162,11 @@ export class AccountingController {
   public closeFiscalYear = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const fiscalYearId = Number(req.params.id);
-      const { userId, notes } = req.body;
+      const { notes } = req.body;
+      const parsedUserId = Number(req.body.userId || req.body.closedById || req.body.performedByUserId || 1);
       const result = await this.accountingService.closeFiscalYear(
         fiscalYearId,
-        Number(userId),
+        parsedUserId,
         notes
       );
       res.json(result);

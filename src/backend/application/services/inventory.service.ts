@@ -62,12 +62,107 @@ export class InventoryService {
         retailPrice: String(dto.retailPrice),
         taxCategoryId: dto.taxCategoryId || null,
         reorderPoint: dto.reorderPoint !== undefined ? dto.reorderPoint : 5,
+        
+        // Advanced POS fields
+        msrp: dto.msrp !== undefined ? String(dto.msrp) : null,
+        manufacturer: dto.manufacturer || null,
+        weight: dto.weight !== undefined ? String(dto.weight) : null,
+        taxCode: dto.taxCode || null,
+        trackingType: dto.trackingType || "none",
+        hasExpiration: dto.hasExpiration !== undefined ? Boolean(dto.hasExpiration) : false,
+        commissionEligible: dto.commissionEligible !== undefined ? Boolean(dto.commissionEligible) : false,
+        commissionRate: dto.commissionRate !== undefined ? String(dto.commissionRate) : "0.00",
+        rewardsEligible: dto.rewardsEligible !== undefined ? Boolean(dto.rewardsEligible) : false,
+        rewardsPoints: dto.rewardsPoints !== undefined ? Number(dto.rewardsPoints) : 0,
+        printTagTemplate: dto.printTagTemplate || null,
+        printTagDefaultQty: dto.printTagDefaultQty !== undefined ? Number(dto.printTagDefaultQty) : 1,
+        
+        customField1: dto.customField1 || null,
+        customField2: dto.customField2 || null,
+        customField3: dto.customField3 || null,
+        customField4: dto.customField4 || null,
+        customField5: dto.customField5 || null,
+
         createdAt: new Date(),
         updatedAt: new Date()
       });
 
+      // Additional Barcodes
+      if (Array.isArray(dto.additionalBarcodes)) {
+        const barcodesRepo = txUow.getRepository<any>("productBarcodes", tx);
+        for (const bar of dto.additionalBarcodes) {
+          await barcodesRepo.create({
+            productId: newProduct.id,
+            variantId: bar.variantId || null,
+            barcode: bar.barcode.trim(),
+            notes: bar.notes || null,
+            createdAt: new Date()
+          });
+        }
+      }
+
+      // Multiple Vendors
+      if (Array.isArray(dto.vendors)) {
+        const vendorsRepo = txUow.getRepository<any>("productVendors", tx);
+        for (const v of dto.vendors) {
+          await vendorsRepo.create({
+            productId: newProduct.id,
+            vendorId: v.vendorId,
+            vendorPartNumber: v.vendorPartNumber || null,
+            vendorCost: String(v.vendorCost),
+            isPrimary: v.isPrimary !== undefined ? Boolean(v.isPrimary) : false,
+            createdAt: new Date()
+          });
+        }
+      }
+
+      // Pricing Tiers
+      if (Array.isArray(dto.pricingTiers)) {
+        const tiersRepo = txUow.getRepository<any>("productPricingTiers", tx);
+        for (const pt of dto.pricingTiers) {
+          await tiersRepo.create({
+            productId: newProduct.id,
+            variantId: pt.variantId || null,
+            tierName: pt.tierName,
+            price: String(pt.price),
+            createdAt: new Date()
+          });
+        }
+      }
+
+      // Units of Measure
+      if (Array.isArray(dto.uoms)) {
+        const uomsRepo = txUow.getRepository<any>("productUoms", tx);
+        for (const u of dto.uoms) {
+          await uomsRepo.create({
+            productId: newProduct.id,
+            unitName: u.unitName,
+            conversionFactor: String(u.conversionFactor),
+            barcode: u.barcode ? u.barcode.trim() : null,
+            retailPrice: u.retailPrice !== undefined ? String(u.retailPrice) : null,
+            costPrice: u.costPrice !== undefined ? String(u.costPrice) : null,
+            isBaseUnit: u.isBaseUnit !== undefined ? Boolean(u.isBaseUnit) : false,
+            createdAt: new Date()
+          });
+        }
+      }
+
+      // Attributes
+      if (Array.isArray(dto.attributes)) {
+        const attrsRepo = txUow.getRepository<any>("productAttributes", tx);
+        for (const attr of dto.attributes) {
+          await attrsRepo.create({
+            productId: newProduct.id,
+            variantId: attr.variantId || null,
+            name: attr.name,
+            value: String(attr.value),
+            createdAt: new Date()
+          });
+        }
+      }
+
       this.logger.info(`Product created: ID ${newProduct.id}, SKU ${newProduct.sku}`);
-      return newProduct;
+      return await productRepo.findById(newProduct.id);
     });
   }
 
@@ -94,8 +189,137 @@ export class InventoryService {
       if (dto.taxCategoryId !== undefined) updateData.taxCategoryId = dto.taxCategoryId;
       if (dto.reorderPoint !== undefined) updateData.reorderPoint = dto.reorderPoint;
 
+      // Advanced POS fields
+      if (dto.msrp !== undefined) updateData.msrp = dto.msrp !== null ? String(dto.msrp) : null;
+      if (dto.manufacturer !== undefined) updateData.manufacturer = dto.manufacturer;
+      if (dto.weight !== undefined) updateData.weight = dto.weight !== null ? String(dto.weight) : null;
+      if (dto.taxCode !== undefined) updateData.taxCode = dto.taxCode;
+      if (dto.trackingType !== undefined) updateData.trackingType = dto.trackingType;
+      if (dto.hasExpiration !== undefined) updateData.hasExpiration = Boolean(dto.hasExpiration);
+      if (dto.commissionEligible !== undefined) updateData.commissionEligible = Boolean(dto.commissionEligible);
+      if (dto.commissionRate !== undefined) updateData.commissionRate = String(dto.commissionRate);
+      if (dto.rewardsEligible !== undefined) updateData.rewardsEligible = Boolean(dto.rewardsEligible);
+      if (dto.rewardsPoints !== undefined) updateData.rewardsPoints = Number(dto.rewardsPoints);
+      if (dto.printTagTemplate !== undefined) updateData.printTagTemplate = dto.printTagTemplate;
+      if (dto.printTagDefaultQty !== undefined) updateData.printTagDefaultQty = Number(dto.printTagDefaultQty);
+      if (dto.customField1 !== undefined) updateData.customField1 = dto.customField1;
+      if (dto.customField2 !== undefined) updateData.customField2 = dto.customField2;
+      if (dto.customField3 !== undefined) updateData.customField3 = dto.customField3;
+      if (dto.customField4 !== undefined) updateData.customField4 = dto.customField4;
+      if (dto.customField5 !== undefined) updateData.customField5 = dto.customField5;
+
       const updated = await productRepo.update(id, updateData);
-      return updated;
+
+      // Refresh additional barcodes if provided
+      if (dto.additionalBarcodes !== undefined) {
+        const barcodesRepo = txUow.getRepository<any>("productBarcodes", tx);
+        const allBarcodes = await barcodesRepo.findAll();
+        const productBarcodes = allBarcodes.filter((b: any) => b.productId === id);
+        for (const b of productBarcodes) {
+          await barcodesRepo.delete(b.id);
+        }
+        if (Array.isArray(dto.additionalBarcodes)) {
+          for (const bar of dto.additionalBarcodes) {
+            await barcodesRepo.create({
+              productId: id,
+              variantId: bar.variantId || null,
+              barcode: bar.barcode.trim(),
+              notes: bar.notes || null,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+
+      // Refresh vendors if provided
+      if (dto.vendors !== undefined) {
+        const vendorsRepo = txUow.getRepository<any>("productVendors", tx);
+        const allVendors = await vendorsRepo.findAll();
+        const productVendors = allVendors.filter((v: any) => v.productId === id);
+        for (const v of productVendors) {
+          await vendorsRepo.delete(v.id);
+        }
+        if (Array.isArray(dto.vendors)) {
+          for (const v of dto.vendors) {
+            await vendorsRepo.create({
+              productId: id,
+              vendorId: v.vendorId,
+              vendorPartNumber: v.vendorPartNumber || null,
+              vendorCost: String(v.vendorCost),
+              isPrimary: v.isPrimary !== undefined ? Boolean(v.isPrimary) : false,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+
+      // Refresh pricing tiers if provided
+      if (dto.pricingTiers !== undefined) {
+        const tiersRepo = txUow.getRepository<any>("productPricingTiers", tx);
+        const allTiers = await tiersRepo.findAll();
+        const productTiers = allTiers.filter((t: any) => t.productId === id);
+        for (const t of productTiers) {
+          await tiersRepo.delete(t.id);
+        }
+        if (Array.isArray(dto.pricingTiers)) {
+          for (const pt of dto.pricingTiers) {
+            await tiersRepo.create({
+              productId: id,
+              variantId: pt.variantId || null,
+              tierName: pt.tierName,
+              price: String(pt.price),
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+
+      // Refresh units of measure if provided
+      if (dto.uoms !== undefined) {
+        const uomsRepo = txUow.getRepository<any>("productUoms", tx);
+        const allUoms = await uomsRepo.findAll();
+        const productUoms = allUoms.filter((u: any) => u.productId === id);
+        for (const u of productUoms) {
+          await uomsRepo.delete(u.id);
+        }
+        if (Array.isArray(dto.uoms)) {
+          for (const u of dto.uoms) {
+            await uomsRepo.create({
+              productId: id,
+              unitName: u.unitName,
+              conversionFactor: String(u.conversionFactor),
+              barcode: u.barcode ? u.barcode.trim() : null,
+              retailPrice: u.retailPrice !== undefined ? String(u.retailPrice) : null,
+              costPrice: u.costPrice !== undefined ? String(u.costPrice) : null,
+              isBaseUnit: u.isBaseUnit !== undefined ? Boolean(u.isBaseUnit) : false,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+
+      // Refresh attributes if provided
+      if (dto.attributes !== undefined) {
+        const attrsRepo = txUow.getRepository<any>("productAttributes", tx);
+        const allAttrs = await attrsRepo.findAll();
+        const productAttrs = allAttrs.filter((a: any) => a.productId === id);
+        for (const a of productAttrs) {
+          await attrsRepo.delete(a.id);
+        }
+        if (Array.isArray(dto.attributes)) {
+          for (const attr of dto.attributes) {
+            await attrsRepo.create({
+              productId: id,
+              variantId: attr.variantId || null,
+              name: attr.name,
+              value: String(attr.value),
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+
+      return await productRepo.findById(id);
     });
   }
 

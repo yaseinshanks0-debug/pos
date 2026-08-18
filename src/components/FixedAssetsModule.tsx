@@ -154,41 +154,43 @@ export const FixedAssetsModule: React.FC<FixedAssetsModuleProps> = ({ locale }) 
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "Asset Code" : "رقم الأصل"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Asset Name" : "اسم الأصل"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Original Cost" : "التكلفة التاريخية"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Salvage value" : "قيمة الخردة"}</th>
-                <th className="px-6 py-3.5 text-center">{locale === "en" ? "Useful Life" : "العمر الإنتاجي"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Depreciated Accum." : "مجمع الإهلاك"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Book value" : "القيمة الدفترية"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {assets.map((asset) => {
-                const costVal = Number(asset.cost || 0);
-                const accumVal = Number(asset.accumulatedDepreciation || asset.totalAccumulatedDepreciation || 0);
-                const bookValue = Math.max(Number(asset.salvageValue || 0), costVal - accumVal);
-                return (
-                  <tr key={asset.id} className="hover:bg-slate-850/50 transition">
-                    <td className="px-6 py-4 font-mono font-bold text-emerald-400">{asset.code}</td>
-                    <td className="px-6 py-4 font-semibold text-white">{asset.name}</td>
-                    <td className="px-6 py-4 text-right font-mono">${costVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="px-6 py-4 text-right font-mono text-slate-400">${Number(asset.salvageValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="px-6 py-4 text-center font-mono">{asset.usefulLifeMonths} {locale === "en" ? "Months" : "شهر"}</td>
-                    <td className="px-6 py-4 text-right font-mono text-red-400">
-                      -${accumVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-emerald-400">
-                      ${bookValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[650px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Asset Code" : "رقم الأصل"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Asset Name" : "اسم الأصل"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Original Cost" : "التكلفة التاريخية"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Salvage value" : "قيمة الخردة"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-center">{locale === "en" ? "Useful Life" : "العمر الإنتاجي"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Depreciated Accum." : "مجمع الإهلاك"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Book value" : "القيمة الدفترية"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {assets.map((asset) => {
+                  const costVal = Number(asset.cost || 0);
+                  const accumVal = Number(asset.accumulatedDepreciation || asset.totalAccumulatedDepreciation || 0);
+                  const bookValue = Math.max(Number(asset.salvageValue || 0), costVal - accumVal);
+                  return (
+                    <tr key={asset.id} className="hover:bg-slate-850/50 transition">
+                      <td className="px-4 sm:px-6 py-4 font-mono font-bold text-emerald-400">{asset.code}</td>
+                      <td className="px-4 sm:px-6 py-4 font-semibold text-white">{asset.name}</td>
+                      <td className="px-4 sm:px-6 py-4 text-right font-mono">${costVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="px-4 sm:px-6 py-4 text-right font-mono text-slate-400">${Number(asset.salvageValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="px-4 sm:px-6 py-4 text-center font-mono">{asset.usefulLifeMonths} {locale === "en" ? "Months" : "شهر"}</td>
+                      <td className="px-4 sm:px-6 py-4 text-right font-mono text-red-400">
+                        -${accumVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right font-mono font-bold text-emerald-400">
+                        ${bookValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

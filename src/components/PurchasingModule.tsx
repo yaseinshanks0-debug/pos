@@ -27,8 +27,9 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
 
   // Create PO form state
   const [selectedVendorId, setSelectedVendorId] = useState<number | "">("");
-  const [poItems, setPoItems] = useState<{ productId: number; qty: number; unitCost: number }[]>([
-    { productId: 0, qty: 1, unitCost: 0 }
+  const [poNumber, setPoNumber] = useState("");
+  const [poItems, setPoItems] = useState<{ productId: number; orderedQty: number; unitCost: number }[]>([
+    { productId: 0, orderedQty: 1, unitCost: 0 }
   ]);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,12 +59,12 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
 
   const handleCreatePoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedVendorId) return;
+    if (!selectedVendorId || !poNumber) return;
 
     setLoading(true);
     setError(null);
 
-    const filteredItems = poItems.filter((item) => item.productId > 0 && item.qty > 0);
+    const filteredItems = poItems.filter((item) => item.productId > 0 && item.orderedQty > 0);
     if (filteredItems.length === 0) {
       setError(locale === "en" ? "Please add at least one valid item" : "يرجى إضافة بند واحد صحيح على الأقل");
       setLoading(false);
@@ -72,13 +73,16 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
 
     try {
       await api.createPurchaseOrder({
+        companyId: 1,
+        poNumber: poNumber,
         vendorId: Number(selectedVendorId),
         storeId: 1,
         items: filteredItems
       });
       setShowCreatePoModal(false);
       setSelectedVendorId("");
-      setPoItems([{ productId: 0, qty: 1, unitCost: 0 }]);
+      setPoNumber("");
+      setPoItems([{ productId: 0, orderedQty: 1, unitCost: 0 }]);
       fetchPurchasingData();
     } catch (err: any) {
       console.error(err);
@@ -172,80 +176,84 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
         </div>
       ) : activeTab === "pos" ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "PO Number" : "رقم الطلب"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Vendor / Supplier" : "المورد"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Status" : "الحالة"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Total amount" : "المبلغ الإجمالي"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Actions" : "إجراءات"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {pos.map((po) => {
-                const isDraft = po.status?.toLowerCase() === "draft" || po.status?.toLowerCase() === "submitted";
-                return (
-                  <tr key={po.id} className="hover:bg-slate-850/50 transition">
-                    <td className="px-6 py-4 font-mono font-medium text-emerald-400">PO-{po.poNumber || po.id}</td>
-                    <td className="px-6 py-4 font-semibold text-white">{getVendorName(po.vendorId)}</td>
-                    <td className="px-6 py-4">
-                      {isDraft ? (
-                        <span className="inline-flex items-center gap-1 bg-amber-950/40 text-amber-400 border border-amber-900/40 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          <Clock size={10} />
-                          {po.status || "Pending Approval"}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          <CheckCircle size={10} />
-                          {po.status || "Received & Closed"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-semibold text-white">
-                      ${Number(po.totalAmount || 0).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {isDraft && (
-                        <button
-                          onClick={() => handleApprovePo(po.id)}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded transition cursor-pointer flex items-center gap-1 ml-auto"
-                        >
-                          <Truck size={10} />
-                          <span>{locale === "en" ? "Approve & Receive" : "الموافقة والاستلام"}</span>
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[600px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "PO Number" : "رقم الطلب"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Vendor / Supplier" : "المورد"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Status" : "الحالة"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Total amount" : "المبلغ الإجمالي"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Actions" : "إجراءات"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {pos.map((po) => {
+                  const isDraft = po.status?.toLowerCase() === "draft" || po.status?.toLowerCase() === "submitted";
+                  return (
+                    <tr key={po.id} className="hover:bg-slate-850/50 transition">
+                      <td className="px-4 sm:px-6 py-4 font-mono font-medium text-emerald-400">PO-{po.poNumber || po.id}</td>
+                      <td className="px-4 sm:px-6 py-4 font-semibold text-white">{getVendorName(po.vendorId)}</td>
+                      <td className="px-4 sm:px-6 py-4">
+                        {isDraft ? (
+                          <span className="inline-flex items-center gap-1 bg-amber-950/40 text-amber-400 border border-amber-900/40 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            <Clock size={10} />
+                            {po.status || "Pending Approval"}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            <CheckCircle size={10} />
+                            {po.status || "Received & Closed"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right font-mono font-semibold text-white">
+                        ${Number(po.totalAmount || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        {isDraft && (
+                          <button
+                            onClick={() => handleApprovePo(po.id)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded transition cursor-pointer flex items-center gap-1 ml-auto"
+                          >
+                            <Truck size={10} />
+                            <span>{locale === "en" ? "Approve & Receive" : "الموافقة والاستلام"}</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "Supplier Name" : "اسم المورد"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Contact Email" : "البريد الإلكتروني"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Phone" : "الهاتف"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Outstanding AP Balance" : "الرصيد الدائن المتبقي"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {vendors.map((v) => (
-                <tr key={v.id} className="hover:bg-slate-850/50 transition">
-                  <td className="px-6 py-4 font-semibold text-white">{v.name}</td>
-                  <td className="px-6 py-4 text-slate-400">{v.email || "N/A"}</td>
-                  <td className="px-6 py-4 font-mono text-slate-400">{v.phone || "N/A"}</td>
-                  <td className="px-6 py-4 text-right font-mono font-bold text-red-400">
-                    ${Number(v.balance || 0).toFixed(2)}
-                  </td>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[600px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Supplier Name" : "اسم المورد"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Contact Email" : "البريد الإلكتروني"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Phone" : "الهاتف"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Outstanding AP Balance" : "الرصيد الدائن المتبقي"}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {vendors.map((v) => (
+                  <tr key={v.id} className="hover:bg-slate-850/50 transition">
+                    <td className="px-4 sm:px-6 py-4 font-semibold text-white">{v.name}</td>
+                    <td className="px-4 sm:px-6 py-4 text-slate-400">{v.email || "N/A"}</td>
+                    <td className="px-4 sm:px-6 py-4 font-mono text-slate-400">{v.phone || "N/A"}</td>
+                    <td className="px-4 sm:px-6 py-4 text-right font-mono font-bold text-red-400">
+                      ${Number(v.balance || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -260,6 +268,19 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
               <Plus className="text-emerald-500" size={16} />
               {locale === "en" ? "Create New Purchase Order (HQ)" : "إنشاء طلب توريد جديد"}
             </h3>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                {locale === "en" ? "PO Number" : "رقم الطلب"}
+              </label>
+              <input
+                type="text"
+                value={poNumber}
+                onChange={(e) => setPoNumber(e.target.value)}
+                className="block w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                required
+              />
+            </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
@@ -311,10 +332,10 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
 
                   <input
                     type="number"
-                    value={item.qty || ""}
+                    value={item.orderedQty || ""}
                     onChange={(e) => {
                       const next = [...poItems];
-                      next[idx].qty = Number(e.target.value);
+                      next[idx].orderedQty = Number(e.target.value);
                       setPoItems(next);
                     }}
                     placeholder="Qty"
@@ -349,7 +370,7 @@ export const PurchasingModule: React.FC<PurchasingModuleProps> = ({ locale }) =>
 
               <button
                 type="button"
-                onClick={() => setPoItems([...poItems, { productId: 0, qty: 1, unitCost: 0 }])}
+                onClick={() => setPoItems([...poItems, { productId: 0, orderedQty: 1, unitCost: 0 }])}
                 className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer mt-2"
               >
                 <Plus size={10} />

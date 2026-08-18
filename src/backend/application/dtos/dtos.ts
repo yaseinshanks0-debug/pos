@@ -88,6 +88,30 @@ export interface GiftCardTxDto {
   createdByUserId?: number;
 }
 
+export interface GenerateProductMatrixDto {
+  productId: number;
+  attributes: Array<{
+    name: string;
+    values: string[];
+  }>;
+  baseSku: string;
+  baseBarcode: string;
+  baseCost: number | string;
+  baseRetail: number | string;
+}
+
+export interface CreateCustomerPricingRuleDto {
+  companyId: number;
+  customerId?: number;
+  customerGroupId?: number;
+  productId: number;
+  variantId?: number;
+  price: number | string;
+  discountPercentage?: number | string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+}
+
 // ==========================================
 // Inventory Module DTOs
 // ==========================================
@@ -104,6 +128,33 @@ export interface CreateProductDto {
   retailPrice: number | string;
   taxCategoryId?: number;
   reorderPoint?: number;
+  
+  // Advanced POS fields
+  msrp?: number | string;
+  manufacturer?: string;
+  weight?: number | string;
+  taxCode?: string;
+  trackingType?: "none" | "serial" | "lot";
+  hasExpiration?: boolean;
+  commissionEligible?: boolean;
+  commissionRate?: number | string;
+  rewardsEligible?: boolean;
+  rewardsPoints?: number;
+  printTagTemplate?: string;
+  printTagDefaultQty?: number;
+  
+  customField1?: string;
+  customField2?: string;
+  customField3?: string;
+  customField4?: string;
+  customField5?: string;
+
+  // Sub-relations
+  additionalBarcodes?: Array<{ barcode: string; notes?: string; variantId?: number }>;
+  vendors?: Array<{ vendorId: number; vendorPartNumber?: string; vendorCost: number; isPrimary?: boolean }>;
+  pricingTiers?: Array<{ tierName: string; price: number; variantId?: number }>;
+  uoms?: Array<{ unitName: string; conversionFactor: number; barcode?: string; retailPrice?: number; costPrice?: number; isBaseUnit?: boolean }>;
+  attributes?: Array<{ name: string; value: string; variantId?: number }>;
 }
 
 export interface UpdateProductDto {
@@ -116,6 +167,33 @@ export interface UpdateProductDto {
   retailPrice?: number | string;
   taxCategoryId?: number;
   reorderPoint?: number;
+
+  // Advanced POS fields
+  msrp?: number | string;
+  manufacturer?: string;
+  weight?: number | string;
+  taxCode?: string;
+  trackingType?: "none" | "serial" | "lot";
+  hasExpiration?: boolean;
+  commissionEligible?: boolean;
+  commissionRate?: number | string;
+  rewardsEligible?: boolean;
+  rewardsPoints?: number;
+  printTagTemplate?: string;
+  printTagDefaultQty?: number;
+  
+  customField1?: string;
+  customField2?: string;
+  customField3?: string;
+  customField4?: string;
+  customField5?: string;
+
+  // Sub-relations
+  additionalBarcodes?: Array<{ barcode: string; notes?: string; variantId?: number }>;
+  vendors?: Array<{ vendorId: number; vendorPartNumber?: string; vendorCost: number; isPrimary?: boolean }>;
+  pricingTiers?: Array<{ tierName: string; price: number; variantId?: number }>;
+  uoms?: Array<{ unitName: string; conversionFactor: number; barcode?: string; retailPrice?: number; costPrice?: number; isBaseUnit?: boolean }>;
+  attributes?: Array<{ name: string; value: string; variantId?: number }>;
 }
 
 export interface CreateProductVariantDto {

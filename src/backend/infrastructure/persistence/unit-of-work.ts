@@ -8,7 +8,8 @@ import {
   DrizzleTransferOrderRepository, 
   DrizzleInventoryRepository, 
   DrizzleGiftCardRepository,
-  DrizzleUserRepository
+  DrizzleUserRepository,
+  DrizzleProductRepository
 } from "../repositories/drizzle.repository.ts";
 
 export class DrizzleUnitOfWork implements IUnitOfWork {
@@ -18,6 +19,9 @@ export class DrizzleUnitOfWork implements IUnitOfWork {
     const currentTx = tx || this.txContext;
     
     // Return specialized repositories if they exist
+    if (entityName === "products") {
+      return new DrizzleProductRepository(currentTx) as unknown as IRepository<T>;
+    }
     if (entityName === "transferOrders") {
       return new DrizzleTransferOrderRepository(currentTx) as unknown as IRepository<T>;
     }

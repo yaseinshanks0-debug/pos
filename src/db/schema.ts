@@ -213,6 +213,23 @@ export const products = pgTable("products", {
   taxCategoryId: integer("tax_category_id")
     .references(() => taxRules.id),
   reorderPoint: integer("reorder_point").default(5).notNull(),
+  msrp: numeric("msrp", { precision: 12, scale: 2 }),
+  manufacturer: text("manufacturer"),
+  weight: numeric("weight", { precision: 10, scale: 2 }),
+  taxCode: text("tax_code"),
+  trackingType: text("tracking_type").default("none").notNull(), // 'none', 'serial', 'lot'
+  hasExpiration: boolean("has_expiration").default(false).notNull(),
+  commissionEligible: boolean("commission_eligible").default(false).notNull(),
+  commissionRate: numeric("commission_rate", { precision: 5, scale: 2 }).default("0.00").notNull(),
+  rewardsEligible: boolean("rewards_eligible").default(false).notNull(),
+  rewardsPoints: integer("rewards_points").default(0).notNull(),
+  printTagTemplate: text("print_tag_template"),
+  printTagDefaultQty: integer("print_tag_default_qty").default(1).notNull(),
+  customField1: text("custom_field_1"),
+  customField2: text("custom_field_2"),
+  customField3: text("custom_field_3"),
+  customField4: text("custom_field_4"),
+  customField5: text("custom_field_5"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -229,9 +246,100 @@ export const productVariants = pgTable("product_variants", {
   size: text("size"),
   color: text("color"),
   material: text("material"),
+  style: text("style"),
   costPrice: numeric("cost_price", { precision: 12, scale: 2 }), // overrides base cost if present
   retailPrice: numeric("retail_price", { precision: 12, scale: 2 }), // overrides base retail if present
+  msrp: numeric("msrp", { precision: 12, scale: 2 }),
+  weight: numeric("weight", { precision: 10, scale: 2 }),
+  customField1: text("custom_field_1"),
+  customField2: text("custom_field_2"),
+  customField3: text("custom_field_3"),
+  customField4: text("custom_field_4"),
+  customField5: text("custom_field_5"),
   isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16a. Product Barcodes (Supports Multiple Barcodes per product/variant)
+export const productBarcodes = pgTable("product_barcodes", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  variantId: integer("variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }),
+  barcode: text("barcode").notNull().unique(),
+  notes: text("notes"), // e.g. "Case Barcode", "Alternate Unit Barcode"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16b. Product Vendors (Supports Multiple Vendors per product and Vendor-specific costs)
+export const productVendors = pgTable("product_vendors", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  vendorId: integer("vendor_id")
+    .references(() => vendors.id, { onDelete: "cascade" })
+    .notNull(),
+  vendorPartNumber: text("vendor_part_number"),
+  vendorCost: numeric("vendor_cost", { precision: 12, scale: 2 }).notNull(),
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16c. Product Pricing Tiers (Supports Multiple Pricing Levels & Customer Pricing Tiers)
+export const productPricingTiers = pgTable("product_pricing_tiers", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  variantId: integer("variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }),
+  tierName: text("tier_name").notNull(), // e.g. "Wholesale", "VIP Level 1", "MSRP"
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16d. Product Units of Measure (Supports UOM conversion factors, unit-specific prices, costs, and barcodes)
+export const productUoms = pgTable("product_uoms", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  unitName: text("unit_name").notNull(), // e.g. "Box of 10", "Case of 100", "Pallet"
+  conversionFactor: numeric("conversion_factor", { precision: 10, scale: 4 }).notNull(), // e.g. 10.0000, 100.0000
+  barcode: text("barcode"), // unit-specific barcode
+  retailPrice: numeric("retail_price", { precision: 12, scale: 2 }), // unit-specific pricing
+  costPrice: numeric("cost_price", { precision: 12, scale: 2 }), // unit-specific cost
+  isBaseUnit: boolean("is_base_unit").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16e. Product Attributes (Supports custom Product Attributes)
+export const productAttributes = pgTable("product_attributes", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  variantId: integer("variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // e.g. "Fabric Type", "Sleeve Length"
+  value: text("value").notNull(), // e.g. "Cotton", "Long Sleeve"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 16f. Inventory Lots & Serials (Supports Serial Number Tracking, Batch/Lot Tracking, Expiration Dates)
+export const inventoryLotsSerials = pgTable("inventory_lots_serials", {
+  id: serial("id").primaryKey(),
+  inventoryId: integer("inventory_id")
+    .references(() => inventory.id, { onDelete: "cascade" })
+    .notNull(),
+  serialNumber: text("serial_number"), // unique per stock unit if trackingType === 'serial'
+  lotNumber: text("lot_number"), // lot/batch number if trackingType === 'lot'
+  expirationDate: timestamp("expiration_date"), // lot/batch expiration date
+  quantity: integer("quantity").default(1).notNull(), // lot quantity (always 1 for serial)
+  status: text("status").default("available").notNull(), // available, sold, transferred, quarantined
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -759,6 +867,27 @@ export const inventoryCostLayerConsumptions = pgTable("inventory_cost_layer_cons
     .notNull(),
   quantityConsumed: numeric("quantity_consumed", { precision: 12, scale: 2 }).notNull(),
   cogsPosted: numeric("cogs_posted", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 47. Customer Pricing Rules (Supports specific customer-level or group-level pricing)
+export const customerPricingRules = pgTable("customer_pricing_rules", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")
+    .references(() => companies.id, { onDelete: "cascade" })
+    .notNull(),
+  customerId: integer("customer_id")
+    .references(() => customers.id, { onDelete: "cascade" }), // Specific customer
+  customerGroupId: integer("customer_group_id")
+    .references(() => customerGroups.id, { onDelete: "cascade" }), // Or customer group
+  productId: integer("product_id")
+    .references(() => products.id, { onDelete: "cascade" }),
+  variantId: integer("variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  discountPercentage: numeric("discount_percentage", { precision: 5, scale: 2 }),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

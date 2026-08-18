@@ -101,6 +101,21 @@ export interface Product {
   qtyOnHand: number;
   categoryId?: number;
   storeId?: number;
+  variants?: ProductVariant[];
+}
+
+export interface ProductVariant {
+  id: number;
+  productId: number;
+  sku: string;
+  barcode: string;
+  variantName: string;
+  size?: string;
+  color?: string;
+  material?: string;
+  style?: string;
+  costPrice?: number;
+  retailPrice?: number;
 }
 
 export interface Category {

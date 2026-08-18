@@ -133,6 +133,81 @@ export class Validator {
     if (!dto.name || dto.name.trim() === "") errors.name = ["Product name is required."];
     if (dto.costPrice === undefined || Number(dto.costPrice) < 0) errors.costPrice = ["Cost price must be zero or positive."];
     if (dto.retailPrice === undefined || Number(dto.retailPrice) < 0) errors.retailPrice = ["Retail price must be zero or positive."];
+    
+    // Validate advanced POS tracking fields
+    if (dto.trackingType !== undefined && !["none", "serial", "lot"].includes(dto.trackingType)) {
+      errors.trackingType = ["Tracking type must be 'none', 'serial', or 'lot'."];
+    }
+    if (dto.commissionEligible && dto.commissionRate !== undefined && Number(dto.commissionRate) < 0) {
+      errors.commissionRate = ["Commission rate cannot be negative."];
+    }
+    if (dto.rewardsEligible && dto.rewardsPoints !== undefined && Number(dto.rewardsPoints) < 0) {
+      errors.rewardsPoints = ["Rewards points cannot be negative."];
+    }
+
+    // Validate additional barcodes
+    if (Array.isArray(dto.additionalBarcodes)) {
+      dto.additionalBarcodes.forEach((bar: any, idx: number) => {
+        if (!bar.barcode || bar.barcode.trim() === "") {
+          errors[`additionalBarcodes[${idx}].barcode`] = ["Barcode is required."];
+        }
+      });
+    }
+
+    // Validate vendors
+    if (Array.isArray(dto.vendors)) {
+      dto.vendors.forEach((v: any, idx: number) => {
+        if (!v.vendorId) {
+          errors[`vendors[${idx}].vendorId`] = ["Vendor ID is required."];
+        }
+        if (v.vendorCost === undefined || Number(v.vendorCost) < 0) {
+          errors[`vendors[${idx}].vendorCost`] = ["Vendor cost must be zero or positive."];
+        }
+      });
+    }
+
+    // Validate pricing tiers
+    if (Array.isArray(dto.pricingTiers)) {
+      dto.pricingTiers.forEach((tier: any, idx: number) => {
+        if (!tier.tierName || tier.tierName.trim() === "") {
+          errors[`pricingTiers[${idx}].tierName`] = ["Pricing tier name is required."];
+        }
+        if (tier.price === undefined || Number(tier.price) < 0) {
+          errors[`pricingTiers[${idx}].price`] = ["Tier price must be zero or positive."];
+        }
+      });
+    }
+
+    // Validate Units of Measure
+    if (Array.isArray(dto.uoms)) {
+      dto.uoms.forEach((uom: any, idx: number) => {
+        if (!uom.unitName || uom.unitName.trim() === "") {
+          errors[`uoms[${idx}].unitName`] = ["Unit name is required."];
+        }
+        if (uom.conversionFactor === undefined || Number(uom.conversionFactor) <= 0) {
+          errors[`uoms[${idx}].conversionFactor`] = ["UOM conversion factor must be greater than zero."];
+        }
+        if (uom.retailPrice !== undefined && Number(uom.retailPrice) < 0) {
+          errors[`uoms[${idx}].retailPrice`] = ["UOM retail price must be zero or positive."];
+        }
+        if (uom.costPrice !== undefined && Number(uom.costPrice) < 0) {
+          errors[`uoms[${idx}].costPrice`] = ["UOM cost price must be zero or positive."];
+        }
+      });
+    }
+
+    // Validate attributes
+    if (Array.isArray(dto.attributes)) {
+      dto.attributes.forEach((attr: any, idx: number) => {
+        if (!attr.name || attr.name.trim() === "") {
+          errors[`attributes[${idx}].name`] = ["Attribute name is required."];
+        }
+        if (attr.value === undefined || String(attr.value).trim() === "") {
+          errors[`attributes[${idx}].value`] = ["Attribute value is required."];
+        }
+      });
+    }
+
     if (Object.keys(errors).length > 0) throw new ValidationError(errors);
   }
 

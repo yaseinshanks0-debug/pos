@@ -27,9 +27,9 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
   // Journal entry form state
   const [memo, setMemo] = useState("");
   const [journalDate, setJournalDate] = useState(new Date().toISOString().split("T")[0]);
-  const [jeLines, setJeLines] = useState<{ accountId: number; debit: number; credit: number }[]>([
-    { accountId: 0, debit: 0, credit: 0 },
-    { accountId: 0, debit: 0, credit: 0 }
+  const [jeLines, setJeLines] = useState<{ accountCode: string; debit: number; credit: number }[]>([
+    { accountCode: "", debit: 0, credit: 0 },
+    { accountCode: "", debit: 0, credit: 0 }
   ]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -39,10 +39,10 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
     setError(null);
     try {
       const coaList = await api.getChartOfAccounts();
-      setCoa(coaList);
+      setCoa(Array.isArray(coaList) ? coaList : []);
 
       const periodList = await api.getAccountingPeriods();
-      setPeriods(periodList);
+      setPeriods(Array.isArray(periodList) ? periodList : []);
 
       const tb = await api.getTrialBalance();
       setTrialBalance(tb);
@@ -59,7 +59,7 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
   }, []);
 
   const handleAddJeLine = () => {
-    setJeLines([...jeLines, { accountId: 0, debit: 0, credit: 0 }]);
+    setJeLines([...jeLines, { accountCode: "", debit: 0, credit: 0 }]);
   };
 
   const handleRemoveJeLine = (idx: number) => {
@@ -87,13 +87,13 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
     if (!balanced) {
       setError(
         locale === "en"
-          ? `Journal Entry is out of balance. Debits ($${debits}) must equal Credits ($${credits}).`
-          : `القيد غير متزن. يجب أن يتساوى المدين (${debits}) مع الدائن (${credits}).`
+          ? `Journal Entry is out of balance. Debits ($${debits.toFixed(2)}) must equal Credits ($${credits.toFixed(2)}).`
+          : `القيد غير متزن. يجب أن يتساوى المدين (${debits.toFixed(2)}) مع الدائن (${credits.toFixed(2)}).`
       );
       return;
     }
 
-    const filtered = jeLines.filter((l) => l.accountId > 0 && (l.debit > 0 || l.credit > 0));
+    const filtered = jeLines.filter((l) => l.accountCode && (l.debit > 0 || l.credit > 0));
     if (filtered.length < 2) {
       setError(locale === "en" ? "Journal entry must contain at least 2 distinct account lines" : "يجب أن يحتوي القيد على بندين محاسبيين على الأقل");
       return;
@@ -102,20 +102,27 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
     setLoading(true);
     try {
       await api.postJournalEntry({
-        memo,
-        date: journalDate,
-        lines: filtered.map((l) => ({
-          accountId: l.accountId,
-          debit: Number(l.debit),
-          credit: Number(l.credit)
-        }))
+        companyId: 1,
+        description: memo || (locale === "en" ? "Manual Journal Entry" : "قيد يومية يدوي"),
+        referenceType: "manual",
+        createdAt: journalDate ? new Date(journalDate).toISOString() : new Date().toISOString(),
+        lines: filtered.map((l) => {
+          const matchedAcc = coa.find((c) => String(c.code) === String(l.accountCode));
+          return {
+            accountCode: l.accountCode,
+            accountName: matchedAcc?.name || `Account ${l.accountCode}`,
+            accountType: matchedAcc?.type || "expenses",
+            debit: Number(l.debit || 0),
+            credit: Number(l.credit || 0),
+          };
+        }),
       });
 
       setSuccess(locale === "en" ? "Double-entry Journal Voucher successfully posted!" : "تم ترحيل قيد اليومية بنجاح!");
       setMemo("");
       setJeLines([
-        { accountId: 0, debit: 0, credit: 0 },
-        { accountId: 0, debit: 0, credit: 0 }
+        { accountCode: "", debit: 0, credit: 0 },
+        { accountCode: "", debit: 0, credit: 0 }
       ]);
       fetchAccountingData();
     } catch (err: any) {
@@ -230,28 +237,30 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
       ) : activeTab === "coa" ? (
         /* Chart of Accounts Grid list */
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "Account Code" : "رقم الحساب"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Account Name" : "اسم الحساب"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Type" : "التصنيف الرئيسي"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Current Balance" : "الرصيد الدفتري الحالي"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {coa.map((acc) => (
-                <tr key={acc.id} className="hover:bg-slate-850/50 transition">
-                  <td className="px-6 py-4 font-mono font-bold text-emerald-400">{acc.code}</td>
-                  <td className="px-6 py-4 text-white font-semibold">{acc.name}</td>
-                  <td className="px-6 py-4 uppercase font-bold text-slate-400 text-[10px] tracking-wider">{acc.type}</td>
-                  <td className="px-6 py-4 text-right font-mono text-white">
-                    ${Number(acc.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </td>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[550px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Account Code" : "رقم الحساب"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Account Name" : "اسم الحساب"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Type" : "التصنيف الرئيسي"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Current Balance" : "الرصيد الدفتري الحالي"}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {coa.map((acc, accIdx) => (
+                  <tr key={`coa-row-${acc.code || acc.id || accIdx}`} className="hover:bg-slate-850/50 transition">
+                    <td className="px-4 sm:px-6 py-4 font-mono font-bold text-emerald-400">{acc.code}</td>
+                    <td className="px-4 sm:px-6 py-4 text-white font-semibold">{acc.name}</td>
+                    <td className="px-4 sm:px-6 py-4 uppercase font-bold text-slate-400 text-[10px] tracking-wider">{acc.type}</td>
+                    <td className="px-4 sm:px-6 py-4 text-right font-mono text-white">
+                      ${Number(acc.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : activeTab === "journal" ? (
         /* Double Entry Voucher Post form */
@@ -301,16 +310,16 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
             </div>
 
             {jeLines.map((line, idx) => (
-              <div key={idx} className="flex gap-3 items-center">
+              <div key={`je-line-${idx}`} className="flex gap-3 items-center">
                 <select
-                  value={line.accountId}
-                  onChange={(e) => updateJeLine(idx, "accountId", Number(e.target.value))}
+                  value={line.accountCode}
+                  onChange={(e) => updateJeLine(idx, "accountCode", e.target.value)}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-emerald-500"
                   required
                 >
-                  <option value={0}>{locale === "en" ? "-- Choose Account --" : "-- اختر الحساب --"}</option>
-                  {coa.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
+                  <option key="default-choose" value="">{locale === "en" ? "-- Choose Account --" : "-- اختر الحساب --"}</option>
+                  {coa.map((acc, accIdx) => (
+                    <option key={`coa-opt-${acc.code || acc.id || accIdx}`} value={acc.code || acc.id}>
                       {acc.code} - {acc.name} ({acc.type})
                     </option>
                   ))}
@@ -320,6 +329,8 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
                   <span className="text-slate-500 text-xs mr-1">$</span>
                   <input
                     type="number"
+                    step="0.01"
+                    min="0"
                     value={line.debit || ""}
                     onChange={(e) => updateJeLine(idx, "debit", Number(e.target.value))}
                     placeholder="Debit"
@@ -332,6 +343,8 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
                   <span className="text-slate-500 text-xs mr-1">$</span>
                   <input
                     type="number"
+                    step="0.01"
+                    min="0"
                     value={line.credit || ""}
                     onChange={(e) => updateJeLine(idx, "credit", Number(e.target.value))}
                     placeholder="Credit"
@@ -392,96 +405,100 @@ export const AccountingModule: React.FC<AccountingModuleProps> = ({ locale }) =>
       ) : activeTab === "trial" ? (
         /* Trial Balance grid list */
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "Account Code" : "رقم الحساب"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Account Name" : "اسم الحساب"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Debit Balance" : "الرصيد المدين"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Credit Balance" : "الرصيد الدائن"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {trialBalance?.accounts?.map((row: any) => (
-                <tr key={row.id} className="hover:bg-slate-850/50 transition">
-                  <td className="px-6 py-4 font-mono font-semibold text-emerald-400">{row.code}</td>
-                  <td className="px-6 py-4 text-white font-semibold">{row.name}</td>
-                  <td className="px-6 py-4 text-right font-mono text-emerald-400">
-                    {row.debit > 0 ? `$${Number(row.debit).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "-"}
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[550px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Account Code" : "رقم الحساب"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Account Name" : "اسم الحساب"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Debit Balance" : "الرصيد المدين"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Credit Balance" : "الرصيد الدائن"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {trialBalance?.accounts?.map((row: any, rIdx: number) => (
+                  <tr key={`tb-row-${row.code || row.id || rIdx}`} className="hover:bg-slate-850/50 transition">
+                    <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-emerald-400">{row.code}</td>
+                    <td className="px-4 sm:px-6 py-4 text-white font-semibold">{row.name}</td>
+                    <td className="px-4 sm:px-6 py-4 text-right font-mono text-emerald-400">
+                      {row.debit > 0 ? `$${Number(row.debit).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "-"}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-right font-mono text-blue-400">
+                      {row.credit > 0 ? `$${Number(row.credit).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "-"}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-slate-950 font-bold border-t border-slate-700">
+                  <td colSpan={2} className="px-4 sm:px-6 py-4 text-white uppercase text-[10px] tracking-wider">
+                    {locale === "en" ? "TOTAL CONSOLIDATED TRIAL BALANCE" : "إجمالي الاتزان الموحد لميزان المراجعة"}
                   </td>
-                  <td className="px-6 py-4 text-right font-mono text-blue-400">
-                    {row.credit > 0 ? `$${Number(row.credit).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "-"}
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-white text-sm">
+                    ${Number(trialBalance?.totalDebits || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-white text-sm">
+                    ${Number(trialBalance?.totalCredits || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
-              ))}
-              <tr className="bg-slate-950 font-bold border-t border-slate-700">
-                <td colSpan={2} className="px-6 py-4 text-white uppercase text-[10px] tracking-wider">
-                  {locale === "en" ? "TOTAL CONSOLIDATED TRIAL BALANCE" : "إجمالي الاتزان الموحد لميزان المراجعة"}
-                </td>
-                <td className="px-6 py-4 text-right font-mono text-white text-sm">
-                  ${Number(trialBalance?.totalDebits || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-                <td className="px-6 py-4 text-right font-mono text-white text-sm">
-                  ${Number(trialBalance?.totalCredits || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         /* Period closing list */
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3.5">{locale === "en" ? "Period Name" : "اسم الفترة"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Fiscal Year" : "السنة المالية"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Start Date" : "تاريخ البدء"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "End Date" : "تاريخ الانتهاء"}</th>
-                <th className="px-6 py-3.5">{locale === "en" ? "Ledger Lock Status" : "حالة الدفاتر"}</th>
-                <th className="px-6 py-3.5 text-right">{locale === "en" ? "Closing Actions" : "إجراءات الإقفال"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {periods.map((p) => {
-                const isClosed = !!p.isClosed;
-                return (
-                  <tr key={p.id} className="hover:bg-slate-850/50 transition">
-                    <td className="px-6 py-4 text-white font-bold">{p.name}</td>
-                    <td className="px-6 py-4 font-mono text-slate-400">{p.fiscalYearId}</td>
-                    <td className="px-6 py-4 font-mono text-[11px] text-slate-500">
-                      {new Date(p.startDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-[11px] text-slate-500">
-                      {new Date(p.endDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      {isClosed ? (
-                        <span className="inline-flex items-center gap-1 bg-slate-950 text-slate-400 border border-slate-850 text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-                          <Lock size={10} />
-                          {locale === "en" ? "Locked & Audited" : "مغلقة ومؤمنة"}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 text-[10px] font-semibold px-2.5 py-0.5 rounded-full font-mono">
-                          {locale === "en" ? "Open Ledger" : "مفتوحة للترحيل"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {!isClosed && (
-                        <button
-                          onClick={() => handleClosePeriod(p.id)}
-                          className="bg-red-950 hover:bg-red-900 border border-red-900/40 text-red-300 text-[10px] font-bold px-2.5 py-1 rounded transition cursor-pointer ml-auto"
-                        >
-                          {locale === "en" ? "Close & Lock Period" : "إقفال وتأمين الفترة"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[650px]">
+              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Period Name" : "اسم الفترة"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Fiscal Year" : "السنة المالية"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Start Date" : "تاريخ البدء"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "End Date" : "تاريخ الانتهاء"}</th>
+                  <th className="px-4 sm:px-6 py-3.5">{locale === "en" ? "Ledger Lock Status" : "حالة الدفاتر"}</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">{locale === "en" ? "Closing Actions" : "إجراءات الإقفال"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {periods.map((p, pIdx) => {
+                  const isClosed = !!p.isClosed;
+                  return (
+                    <tr key={`period-row-${p.id || p.name || pIdx}`} className="hover:bg-slate-850/50 transition">
+                      <td className="px-4 sm:px-6 py-4 text-white font-bold">{p.name}</td>
+                      <td className="px-4 sm:px-6 py-4 font-mono text-slate-400">{p.fiscalYearId}</td>
+                      <td className="px-4 sm:px-6 py-4 font-mono text-[11px] text-slate-500">
+                        {new Date(p.startDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 font-mono text-[11px] text-slate-500">
+                        {new Date(p.endDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        {isClosed ? (
+                          <span className="inline-flex items-center gap-1 bg-slate-950 text-slate-400 border border-slate-850 text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                            <Lock size={10} />
+                            {locale === "en" ? "Locked & Audited" : "مغلقة ومؤمنة"}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 text-[10px] font-semibold px-2.5 py-0.5 rounded-full font-mono">
+                            {locale === "en" ? "Open Ledger" : "مفتوحة للترحيل"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        {!isClosed && (
+                          <button
+                            onClick={() => handleClosePeriod(p.id)}
+                            className="bg-red-950 hover:bg-red-900 border border-red-900/40 text-red-300 text-[10px] font-bold px-2.5 py-1 rounded transition cursor-pointer ml-auto"
+                          >
+                            {locale === "en" ? "Close & Lock Period" : "إقفال وتأمين الفترة"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -97,6 +97,13 @@ export const TableRegistry: Record<string, any> = {
   fixedAssetMovements: schema.fixedAssetMovements,
   fixedAssetAuditLogs: schema.fixedAssetAuditLogs,
   savedReports: schema.savedReports,
+  productBarcodes: schema.productBarcodes,
+  productVendors: schema.productVendors,
+  productPricingTiers: schema.productPricingTiers,
+  productUoms: schema.productUoms,
+  productAttributes: schema.productAttributes,
+  inventoryLotsSerials: schema.inventoryLotsSerials,
+  customerPricingRules: schema.customerPricingRules,
 };
 
 export class DrizzleRepository<T> implements IRepository<T> {
@@ -446,6 +453,277 @@ export class DrizzleUserRepository
       ...user,
       role: role[0],
       permissions: permissionNames
+    };
+  }
+}
+
+export class DrizzleProductRepository extends DrizzleRepository<any> {
+  constructor(txContext: any = null) {
+    super("products", txContext);
+  }
+
+  public async findById(id: number): Promise<any | null> {
+    const product = await super.findById(id);
+    if (!product) return null;
+    return this.attachRelations(product);
+  }
+
+  public async findAll(filters?: Record<string, any>): Promise<any[]> {
+    const products = await super.findAll(filters);
+    if (products.length === 0) return [];
+    return Promise.all(products.map(p => this.attachRelations(p)));
+  }
+
+  public async create(dto: any): Promise<any> {
+    const [newProduct] = await this.db.insert(schema.products).values({
+      companyId: dto.companyId,
+      sku: dto.sku.trim(),
+      barcode: dto.barcode.trim(),
+      name: dto.name,
+      description: dto.description || null,
+      categoryId: dto.categoryId || null,
+      departmentId: dto.departmentId || null,
+      brand: dto.brand || null,
+      costPrice: String(dto.costPrice),
+      retailPrice: String(dto.retailPrice),
+      taxCategoryId: dto.taxCategoryId || null,
+      reorderPoint: dto.reorderPoint !== undefined ? dto.reorderPoint : 5,
+      
+      // Advanced POS fields
+      msrp: dto.msrp !== undefined && dto.msrp !== null ? String(dto.msrp) : null,
+      manufacturer: dto.manufacturer || null,
+      weight: dto.weight !== undefined && dto.weight !== null ? String(dto.weight) : null,
+      taxCode: dto.taxCode || null,
+      trackingType: dto.trackingType || "none",
+      hasExpiration: dto.hasExpiration !== undefined ? Boolean(dto.hasExpiration) : false,
+      commissionEligible: dto.commissionEligible !== undefined ? Boolean(dto.commissionEligible) : false,
+      commissionRate: dto.commissionRate !== undefined && dto.commissionRate !== null ? String(dto.commissionRate) : "0.00",
+      rewardsEligible: dto.rewardsEligible !== undefined ? Boolean(dto.rewardsEligible) : false,
+      rewardsPoints: dto.rewardsPoints !== undefined && dto.rewardsPoints !== null ? Number(dto.rewardsPoints) : 0,
+      printTagTemplate: dto.printTagTemplate || null,
+      printTagDefaultQty: dto.printTagDefaultQty !== undefined && dto.printTagDefaultQty !== null ? Number(dto.printTagDefaultQty) : 1,
+      
+      customField1: dto.customField1 || null,
+      customField2: dto.customField2 || null,
+      customField3: dto.customField3 || null,
+      customField4: dto.customField4 || null,
+      customField5: dto.customField5 || null,
+
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+
+    // Additional Barcodes
+    if (Array.isArray(dto.additionalBarcodes)) {
+      for (const bar of dto.additionalBarcodes) {
+        await this.db.insert(schema.productBarcodes).values({
+          productId: newProduct.id,
+          variantId: bar.variantId || null,
+          barcode: bar.barcode.trim(),
+          notes: bar.notes || null,
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Multiple Vendors
+    if (Array.isArray(dto.vendors)) {
+      for (const v of dto.vendors) {
+        await this.db.insert(schema.productVendors).values({
+          productId: newProduct.id,
+          vendorId: v.vendorId,
+          vendorPartNumber: v.vendorPartNumber || null,
+          vendorCost: String(v.vendorCost),
+          isPrimary: v.isPrimary !== undefined ? Boolean(v.isPrimary) : false,
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Pricing Tiers
+    if (Array.isArray(dto.pricingTiers)) {
+      for (const pt of dto.pricingTiers) {
+        await this.db.insert(schema.productPricingTiers).values({
+          productId: newProduct.id,
+          variantId: pt.variantId || null,
+          tierName: pt.tierName,
+          price: String(pt.price),
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Units of Measure
+    if (Array.isArray(dto.uoms)) {
+      for (const u of dto.uoms) {
+        await this.db.insert(schema.productUoms).values({
+          productId: newProduct.id,
+          unitName: u.unitName,
+          conversionFactor: String(u.conversionFactor),
+          barcode: u.barcode ? u.barcode.trim() : null,
+          retailPrice: u.retailPrice !== undefined && u.retailPrice !== null ? String(u.retailPrice) : null,
+          costPrice: u.costPrice !== undefined && u.costPrice !== null ? String(u.costPrice) : null,
+          isBaseUnit: u.isBaseUnit !== undefined ? Boolean(u.isBaseUnit) : false,
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Attributes
+    if (Array.isArray(dto.attributes)) {
+      for (const attr of dto.attributes) {
+        await this.db.insert(schema.productAttributes).values({
+          productId: newProduct.id,
+          variantId: attr.variantId || null,
+          name: attr.name,
+          value: String(attr.value),
+          createdAt: new Date()
+        });
+      }
+    }
+
+    return this.findById(newProduct.id);
+  }
+
+  public async update(id: number, dto: Partial<any>): Promise<any> {
+    const updateData: Record<string, any> = {
+      updatedAt: new Date()
+    };
+
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
+    if (dto.departmentId !== undefined) updateData.departmentId = dto.departmentId;
+    if (dto.brand !== undefined) updateData.brand = dto.brand;
+    if (dto.costPrice !== undefined) updateData.costPrice = String(dto.costPrice);
+    if (dto.retailPrice !== undefined) updateData.retailPrice = String(dto.retailPrice);
+    if (dto.taxCategoryId !== undefined) updateData.taxCategoryId = dto.taxCategoryId;
+    if (dto.reorderPoint !== undefined) updateData.reorderPoint = dto.reorderPoint;
+
+    // Advanced POS fields
+    if (dto.msrp !== undefined) updateData.msrp = dto.msrp !== null ? String(dto.msrp) : null;
+    if (dto.manufacturer !== undefined) updateData.manufacturer = dto.manufacturer;
+    if (dto.weight !== undefined) updateData.weight = dto.weight !== null ? String(dto.weight) : null;
+    if (dto.taxCode !== undefined) updateData.taxCode = dto.taxCode;
+    if (dto.trackingType !== undefined) updateData.trackingType = dto.trackingType;
+    if (dto.hasExpiration !== undefined) updateData.hasExpiration = Boolean(dto.hasExpiration);
+    if (dto.commissionEligible !== undefined) updateData.commissionEligible = Boolean(dto.commissionEligible);
+    if (dto.commissionRate !== undefined) updateData.commissionRate = dto.commissionRate !== null ? String(dto.commissionRate) : null;
+    if (dto.rewardsEligible !== undefined) updateData.rewardsEligible = Boolean(dto.rewardsEligible);
+    if (dto.rewardsPoints !== undefined) updateData.rewardsPoints = dto.rewardsPoints !== null ? Number(dto.rewardsPoints) : null;
+    if (dto.printTagTemplate !== undefined) updateData.printTagTemplate = dto.printTagTemplate;
+    if (dto.printTagDefaultQty !== undefined) updateData.printTagDefaultQty = dto.printTagDefaultQty !== null ? Number(dto.printTagDefaultQty) : null;
+    if (dto.customField1 !== undefined) updateData.customField1 = dto.customField1;
+    if (dto.customField2 !== undefined) updateData.customField2 = dto.customField2;
+    if (dto.customField3 !== undefined) updateData.customField3 = dto.customField3;
+    if (dto.customField4 !== undefined) updateData.customField4 = dto.customField4;
+    if (dto.customField5 !== undefined) updateData.customField5 = dto.customField5;
+
+    await this.db.update(schema.products).set(updateData).where(eq(schema.products.id, id));
+
+    // Refresh additional barcodes if provided
+    if (dto.additionalBarcodes !== undefined) {
+      await this.db.delete(schema.productBarcodes).where(eq(schema.productBarcodes.productId, id));
+      if (Array.isArray(dto.additionalBarcodes)) {
+        for (const bar of dto.additionalBarcodes) {
+          await this.db.insert(schema.productBarcodes).values({
+            productId: id,
+            variantId: bar.variantId || null,
+            barcode: bar.barcode.trim(),
+            notes: bar.notes || null,
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    // Refresh vendors if provided
+    if (dto.vendors !== undefined) {
+      await this.db.delete(schema.productVendors).where(eq(schema.productVendors.productId, id));
+      if (Array.isArray(dto.vendors)) {
+        for (const v of dto.vendors) {
+          await this.db.insert(schema.productVendors).values({
+            productId: id,
+            vendorId: v.vendorId,
+            vendorPartNumber: v.vendorPartNumber || null,
+            vendorCost: String(v.vendorCost),
+            isPrimary: v.isPrimary !== undefined ? Boolean(v.isPrimary) : false,
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    // Refresh pricing tiers if provided
+    if (dto.pricingTiers !== undefined) {
+      await this.db.delete(schema.productPricingTiers).where(eq(schema.productPricingTiers.productId, id));
+      if (Array.isArray(dto.pricingTiers)) {
+        for (const pt of dto.pricingTiers) {
+          await this.db.insert(schema.productPricingTiers).values({
+            productId: id,
+            variantId: pt.variantId || null,
+            tierName: pt.tierName,
+            price: String(pt.price),
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    // Refresh units of measure if provided
+    if (dto.uoms !== undefined) {
+      await this.db.delete(schema.productUoms).where(eq(schema.productUoms.productId, id));
+      if (Array.isArray(dto.uoms)) {
+        for (const u of dto.uoms) {
+          await this.db.insert(schema.productUoms).values({
+            productId: id,
+            unitName: u.unitName,
+            conversionFactor: String(u.conversionFactor),
+            barcode: u.barcode ? u.barcode.trim() : null,
+            retailPrice: u.retailPrice !== undefined && u.retailPrice !== null ? String(u.retailPrice) : null,
+            costPrice: u.costPrice !== undefined && u.costPrice !== null ? String(u.costPrice) : null,
+            isBaseUnit: u.isBaseUnit !== undefined ? Boolean(u.isBaseUnit) : false,
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    // Refresh attributes if provided
+    if (dto.attributes !== undefined) {
+      await this.db.delete(schema.productAttributes).where(eq(schema.productAttributes.productId, id));
+      if (Array.isArray(dto.attributes)) {
+        for (const attr of dto.attributes) {
+          await this.db.insert(schema.productAttributes).values({
+            productId: id,
+            variantId: attr.variantId || null,
+            name: attr.name,
+            value: String(attr.value),
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    return this.findById(id);
+  }
+
+  private async attachRelations(product: any): Promise<any> {
+    const [barcodes, vendors, pricingTiers, uoms, attributes] = await Promise.all([
+      this.db.select().from(schema.productBarcodes).where(eq(schema.productBarcodes.productId, product.id)),
+      this.db.select().from(schema.productVendors).where(eq(schema.productVendors.productId, product.id)),
+      this.db.select().from(schema.productPricingTiers).where(eq(schema.productPricingTiers.productId, product.id)),
+      this.db.select().from(schema.productUoms).where(eq(schema.productUoms.productId, product.id)),
+      this.db.select().from(schema.productAttributes).where(eq(schema.productAttributes.productId, product.id))
+    ]);
+
+    return {
+      ...product,
+      additionalBarcodes: barcodes,
+      vendors: vendors,
+      pricingTiers: pricingTiers,
+      uoms: uoms,
+      attributes: attributes
     };
   }
 }
